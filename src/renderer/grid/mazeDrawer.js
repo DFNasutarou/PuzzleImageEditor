@@ -17,10 +17,15 @@ class MazeDrawer {
     this._isDrawing = false;
     this._drawAction = null;
     this._lastSegId = null;
+    this._layerManager = null;
 
     this._onMouseDown = this._handleMouseDown.bind(this);
     this._onMouseMove = this._handleMouseMove.bind(this);
     this._onMouseUp = this._handleMouseUp.bind(this);
+  }
+
+  setLayerManager(layerManager) {
+    this._layerManager = layerManager;
   }
 
   /**
@@ -141,6 +146,7 @@ class MazeDrawer {
       const line = this._lines.get(seg.id);
       this._canvas.remove(line);
       this._lines.delete(seg.id);
+      if (this._layerManager) this._layerManager.unregisterObject(line);
     } else {
       const line = new fabric.Line([seg.x1, seg.y1, seg.x2, seg.y2], {
         stroke: '#000000',
@@ -151,6 +157,7 @@ class MazeDrawer {
       });
       this._canvas.add(line);
       this._lines.set(seg.id, line);
+      if (this._layerManager) this._layerManager.registerObject(line);
     }
 
     this._canvas.renderAll();
@@ -189,10 +196,13 @@ class MazeDrawer {
       });
       this._canvas.add(line);
       this._lines.set(seg.id, line);
+      if (this._layerManager) this._layerManager.registerObject(line);
       this._canvas.renderAll();
     } else if (this._drawAction === 'remove' && this._lines.has(seg.id)) {
-      this._canvas.remove(this._lines.get(seg.id));
+      const line = this._lines.get(seg.id);
+      this._canvas.remove(line);
       this._lines.delete(seg.id);
+      if (this._layerManager) this._layerManager.unregisterObject(line);
       this._canvas.renderAll();
     }
   }
@@ -205,6 +215,16 @@ class MazeDrawer {
     this._isDrawing = false;
     this._drawAction = null;
     this._lastSegId = null;
+  }
+
+  // undo/redo後にfabric canvas上のmaze-lineから_lines Mapを再構築する
+  rebuildLines() {
+    this._lines.clear();
+    this._canvas.getObjects().forEach(obj => {
+      if (obj.data && obj.data.type === 'maze-line' && obj.data.segId) {
+        this._lines.set(obj.data.segId, obj);
+      }
+    });
   }
 }
 

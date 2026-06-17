@@ -29,24 +29,23 @@ class ElementPlacer {
   }
 
   placeText(canvas, cellPos, options = {}) {
-    const { fontFamily = 'sans-serif', fill = '#000000' } = options
+    const { fontFamily = 'sans-serif', fill = '#000000', groupId } = options
     const { cellSize } = this._config
     const { x, y } = this.cellToPixel(cellPos)
     const fontSize = Math.floor(cellSize * 0.72)
     const char = (options.text || '').charAt(0) || ' '
+    const data = groupId ? { groupId } : {}
 
     const obj = new fabric.Text(char, {
-      left: x,
-      top: y,
-      width: cellSize,
-      height: cellSize,
+      left: x + cellSize / 2,
+      top: y + cellSize / 2,
       fontSize,
       fontFamily,
       fill,
-      textAlign: 'center',
-      originX: 'left',
-      originY: 'top',
-      selectable: true
+      originX: 'center',
+      originY: 'center',
+      selectable: true,
+      data
     })
 
     canvas.add(obj)
@@ -80,6 +79,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break
@@ -95,6 +95,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break
@@ -109,6 +110,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break
@@ -135,6 +137,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break
@@ -162,6 +165,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break
@@ -182,6 +186,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break
@@ -205,6 +210,7 @@ class ElementPlacer {
           fill,
           stroke,
           strokeWidth,
+          strokeUniform: true,
           selectable: true
         })
         break

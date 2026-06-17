@@ -78,5 +78,23 @@ window.BUILTIN_TEMPLATES = [
       gridLineColor: '#000000',
       gridLineWidth: 2
     }
+  },
+  {
+    id: 'hd-standard',
+    label: 'HD標準',
+    description: 'HD解像度(960×540)ベースのテンプレートです。セルサイズ60px、オフセットなし。',
+    schemaVersion: '1.0',
+    defaultGrid: {
+      rows: 9,
+      cols: 16,
+      cellSize: 60,
+      offsetX: 0,
+      offsetY: 0,
+      canvasWidth: 960,
+      canvasHeight: 540,
+      bgColor: '#ffffff',
+      gridLineColor: '#cccccc',
+      gridLineWidth: 1
+    }
   }
 ];

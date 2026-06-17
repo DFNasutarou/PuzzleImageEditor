@@ -37,7 +37,107 @@ body {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Sidebar 2-column body ─── */
+
+.sidebar-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#tool-nav {
+  width: 64px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
+}
+
+.tool-nav-btn {
+  width: 100%;
+  padding: 11px 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: background 0.12s, color 0.12s;
+}
+
+.tool-nav-btn:hover:not(.active) {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.tool-nav-btn.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tool-nav-btn[data-panel="maze"].active {
+  background: #c07010;
+}
+
+#tool-panels {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.tool-panel {
+  display: none;
+  padding: 12px 14px;
+}
+
+.tool-panel.active {
+  display: block;
+}
+
+.tool-panel h2 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── Cell position bar ─── */
+
+#cell-pos-bar {
+  padding: 4px 14px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#cell-pos-bar #toggleGridBtn {
+  margin-top: 0;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+#cell-pos-bar span {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .sidebar-header {
@@ -58,15 +158,6 @@ body {
 .section {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
-}
-
-.section-title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  margin-bottom: 8px;
 }
 
 /* ─── Template list ─── */
@@ -144,35 +235,6 @@ textarea {
   min-height: 50px;
 }
 
-/* ─── Tabs ─── */
-
-.tabs {
-  border-bottom: 1px solid var(--border);
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  border-bottom: 2px solid transparent;
-}
-
-.tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.tab-panel {
-  display: none;
-  padding: 10px 14px;
-}
-
-.tab-panel.active {
-  display: block;
-}
 
 /* ─── Buttons ─── */
 
@@ -216,6 +278,10 @@ button:hover {
 }
 
 /* ─── Main area ─── */
+
+#toolbar button {
+  width: auto;
+}
 
 #mainArea {
   flex: 1;
@@ -360,6 +426,35 @@ button:hover {
   margin-bottom: 4px;
 }
 
+/* ─── Color + transparent toggle ─── */
+
+.color-with-none {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-with-none input[type=color] {
+  flex: 1;
+  width: auto;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.checkbox-label input[type=checkbox] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
 /* ─── Layer list ─── */
 
 .layer-item {
@@ -401,6 +496,27 @@ button:hover {
   margin: 0;
 }
 
+.layer-delete-btn {
+  width: auto;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.layer-delete-btn:hover:not(:disabled) {
+  color: var(--red);
+  background: none;
+}
+
+.layer-delete-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* ─── Toolbar separator ─── */
 
 .toolbar-separator {
@@ -408,12 +524,6 @@ button:hover {
   font-size: 16px;
 }
 
-/* ─── Tab buttons row ─── */
-
-.tab-buttons {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-}
 
 /* ─── Scrollbar ─── */
 

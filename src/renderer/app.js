@@ -7,6 +7,7 @@ const setDirty = v => { isDirty = v; window.__isDirty = v }
 let currentRow = 0, currentCol = 0
 let gridVisible = true
 let isMazeMode = false
+let _dragGroupOffsets = null
 
 document.addEventListener('DOMContentLoaded', () => {
   const canvasEl = document.getElementById('mainCanvas')
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   catalog = new window.ElementCatalog()
   layerManager = new window.LayerManager(gridCanvas.fabricCanvas)
   mazeDrawer = new window.MazeDrawer(gridCanvas.fabricCanvas, gridCanvas.getGridConfig())
+  mazeDrawer.setLayerManager(layerManager)
 
   // fabricCanvas の dirty 追跡（グリッド線・迷路線を除外）
   gridCanvas.fabricCanvas.on('object:added', e => {
@@ -41,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (t !== 'grid-line' && t !== 'maze-line') setDirty(true)
   })
 
-  // キャンバスクリックで配置セル自動設定（CHG_008）
+  // キャンバスクリックで配置セル自動設定（CHG_008）+ グループドラッグ準備
   gridCanvas.fabricCanvas.on('mouse:down', e => {
     if (isMazeMode) return
     const pt = gridCanvas.fabricCanvas.getPointer(e.e)
@@ -52,12 +54,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const colEl = document.getElementById('selectedCol')
     if (rowEl) rowEl.textContent = currentRow
     if (colEl) colEl.textContent = currentCol
+
+    // グループ移動用: ドラッグ対象との相対オフセットを記録
+    const target = e.target
+    if (target && target.data && target.data.groupId) {
+      const gid = target.data.groupId
+      _dragGroupOffsets = new Map()
+      gridCanvas.fabricCanvas.getObjects().forEach(o => {
+        if (o !== target && o.data && o.data.groupId === gid) {
+          _dragGroupOffsets.set(o, { dx: o.left - target.left, dy: o.top - target.top })
+        }
+      })
+    } else {
+      _dragGroupOffsets = null
+    }
+  })
+
+  // グリッドスナップ + グループ追従
+  gridCanvas.fabricCanvas.on('object:moving', e => {
+    if (isMazeMode) return
+    const obj = e.target
+    const { cellSize, offsetX, offsetY } = gridCanvas.getGridConfig()
+    let snappedLeft, snappedTop
+    if (obj.type === 'text' || obj.type === 'i-text') {
+      snappedLeft = Math.round((obj.left - offsetX - cellSize / 2) / cellSize) * cellSize + offsetX + cellSize / 2
+      snappedTop = Math.round((obj.top - offsetY - cellSize / 2) / cellSize) * cellSize + offsetY + cellSize / 2
+    } else {
+      snappedLeft = Math.round((obj.left - offsetX) / cellSize) * cellSize + offsetX
+      snappedTop = Math.round((obj.top - offsetY) / cellSize) * cellSize + offsetY
+    }
+    obj.set({ left: snappedLeft, top: snappedTop })
+    obj.setCoords()
+
+    // グループメンバーも追従（同時追加テキストのまとめ移動）
+    if (_dragGroupOffsets) {
+      _dragGroupOffsets.forEach((offset, member) => {
+        member.set({ left: snappedLeft + offset.dx, top: snappedTop + offset.dy })
+        member.setCoords()
+      })
+      gridCanvas.fabricCanvas.requestRenderAll()
+    }
+  })
+
+  // グリッドスナップ（拡大縮小）
+  gridCanvas.fabricCanvas.on('object:scaling', e => {
+    if (isMazeMode) return
+    const obj = e.target
+    const { cellSize } = gridCanvas.getGridConfig()
+    const rw = obj.width * obj.scaleX
+    const rh = obj.height * obj.scaleY
+    const sw = Math.max(cellSize, Math.round(rw / cellSize) * cellSize)
+    const sh = Math.max(cellSize, Math.round(rh / cellSize) * cellSize)
+    obj.set({ scaleX: sw / obj.width, scaleY: sh / obj.height })
+    obj.setCoords()
   })
 
   renderFontOptions()
   renderShapeOptions()
   renderLayerList()
+  renderTemplateList()
   bindEvents()
+  applyTemplate('hd-standard')
 })
 
 function renderFontOptions() {
@@ -80,18 +137,28 @@ function renderLayerList() {
   if (!list) return
   const layers = layerManager.getLayers()
   const activeId = layerManager.getActiveLayerId ? layerManager.getActiveLayerId() : null
+  const canDelete = layers.length > 1
   list.innerHTML = layers.map(layer => {
     const isActive = layer.id === activeId
+    const visIcon = layer.visible !== false ? '👁' : '🚫'
     return '<div class="layer-item' + (isActive ? ' layer-active' : '') + '" data-id="' + layer.id + '">' +
       '<span class="layer-name">' + (layer.name || layer.id) + '</span>' +
-      '<button class="layer-visibility-btn" data-id="' + layer.id + '">👁</button>' +
+      '<button class="layer-visibility-btn" data-id="' + layer.id + '" title="表示切替">' + visIcon + '</button>' +
+      '<button class="layer-delete-btn" data-id="' + layer.id + '" title="レイヤー削除"' + (canDelete ? '' : ' disabled') + '>✕</button>' +
       '</div>'
   }).join('')
 
   list.querySelectorAll('.layer-item').forEach(item => {
     item.addEventListener('click', e => {
       if (e.target.classList.contains('layer-visibility-btn')) return
+      if (e.target.classList.contains('layer-delete-btn')) return
       layerManager.setActiveLayer(item.dataset.id)
+      layerManager.syncLayerSelectability()
+      gridCanvas.fabricCanvas.discardActiveObject()
+      gridCanvas.fabricCanvas.requestRenderAll()
+      syncLayerGridVisibility()
+      syncLayerGridConfig()
+      syncLayerGridConfigUI()
       renderLayerList()
     })
   })
@@ -101,42 +168,124 @@ function renderLayerList() {
       renderLayerList()
     })
   })
+  list.querySelectorAll('.layer-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (layerManager.removeLayer(btn.dataset.id)) {
+        mazeDrawer.rebuildLines()
+        layerManager.syncLayerSelectability()
+        syncLayerGridVisibility()
+        syncLayerGridConfig()
+        syncLayerGridConfigUI()
+        setDirty(true)
+        renderLayerList()
+      }
+    })
+  })
+}
+
+function syncLayerGridVisibility() {
+  gridVisible = layerManager.getActiveLayerGridVisible()
+  gridCanvas.toggleGrid(gridVisible)
+  const btn = document.getElementById('toggleGridBtn')
+  if (btn) btn.textContent = gridVisible ? 'グリッド非表示' : 'グリッド表示'
+}
+
+function syncLayerGridConfig() {
+  const cfg = layerManager.getActiveLayerGridConfig()
+  gridCanvas.applyLayerGridConfig(cfg)
+  mazeDrawer.updateConfig(gridCanvas.getGridConfig())
+}
+
+function syncLayerGridConfigUI() {
+  const cfg = layerManager.getActiveLayerGridConfig()
+  const csEl = document.getElementById('layerCellSize')
+  const oxEl = document.getElementById('layerOffsetX')
+  const oyEl = document.getElementById('layerOffsetY')
+  if (csEl) csEl.value = cfg.cellSize
+  if (oxEl) oxEl.value = cfg.offsetX
+  if (oyEl) oyEl.value = cfg.offsetY
+}
+
+function syncGridConfigUI() {
+  const cfg = gridCanvas.getGridConfig()
+  const byId = id => document.getElementById(id)
+  if (byId('canvasWidth')) byId('canvasWidth').value = cfg.canvasWidth
+  if (byId('canvasHeight')) byId('canvasHeight').value = cfg.canvasHeight
+  if (byId('gridBgColor')) byId('gridBgColor').value = cfg.bgColor
+  if (byId('gridLineColor')) byId('gridLineColor').value = cfg.gridLineColor
+  syncLayerGridConfigUI()
+}
+
+function renderTemplateList() {
+  const list = document.getElementById('templateList')
+  if (!list) return
+  const templates = window.BUILTIN_TEMPLATES || []
+  list.innerHTML = templates.map(t =>
+    '<button class="template-btn" data-id="' + t.id + '">' + t.label + '</button>'
+  ).join('')
+  list.querySelectorAll('.template-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyTemplate(btn.dataset.id))
+  })
+}
+
+function applyTemplate(templateId) {
+  const loader = new window.TemplateLoader()
+  loader.loadTemplate('builtin:' + templateId).then(tmpl => {
+    const g = tmpl.defaultGrid
+    const offsetX = g.offsetX !== undefined ? g.offsetX : 20
+    const offsetY = g.offsetY !== undefined ? g.offsetY : 20
+    const canvasWidth = g.canvasWidth !== undefined ? g.canvasWidth : (offsetX + g.cols * g.cellSize + offsetX)
+    const canvasHeight = g.canvasHeight !== undefined ? g.canvasHeight : (offsetY + g.rows * g.cellSize + offsetY)
+    gridCanvas.clearCanvas()
+    gridCanvas.setGridConfig({
+      cellSize: g.cellSize,
+      offsetX,
+      offsetY,
+      canvasWidth,
+      canvasHeight,
+      bgColor: g.bgColor || '#ffffff',
+      gridLineColor: g.gridLineColor || '#cccccc',
+      gridLineWidth: g.gridLineWidth !== undefined ? g.gridLineWidth : 1
+    })
+    mazeDrawer.updateConfig(gridCanvas.getGridConfig())
+    layerManager.setLayerGridConfig(layerManager.getActiveLayerId(), {
+      cellSize: g.cellSize, offsetX, offsetY
+    })
+    layerManager.syncLayerSelectability()
+    syncGridConfigUI()
+    setDirty(false)
+    showToast(tmpl.label + ' テンプレートを適用しました')
+  }).catch(err => showToast('テンプレート読み込み失敗: ' + err.message, 'error'))
 }
 
 function bindEvents() {
-  // タブ切り替え
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  // ツールナビ切り替え（迷路モード自動連動）
+  document.querySelectorAll('.tool-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+      document.querySelectorAll('.tool-nav-btn').forEach(b => b.classList.remove('active'))
+      document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'))
       btn.classList.add('active')
-      document.getElementById('panel-' + btn.dataset.tab)?.classList.add('active')
+      document.getElementById('tool-panel-' + btn.dataset.panel)?.classList.add('active')
+      if (btn.dataset.panel === 'maze') {
+        isMazeMode = true
+        mazeDrawer.enable()
+        gridCanvas.fabricCanvas.selection = false
+      } else if (isMazeMode) {
+        isMazeMode = false
+        mazeDrawer.disable()
+        gridCanvas.fabricCanvas.selection = true
+      }
     })
   })
 
-  // グリッド設定リアルタイム反映（CHG_003）
-  document.getElementById('gridCellSize')?.addEventListener('input', e => {
-    const val = parseInt(e.target.value)
-    if (!isNaN(val) && val > 0) {
-      gridCanvas.setGridConfig({ cellSize: val })
-      mazeDrawer.updateConfig(gridCanvas.getGridConfig())
-    }
-  })
+  // グリッドパネル: 画面サイズ・色のリアルタイム反映
   document.getElementById('canvasWidth')?.addEventListener('input', e => {
     const val = parseInt(e.target.value)
-    if (!isNaN(val) && val > 0) gridCanvas.setGridConfig({ canvasWidth: val })
+    if (!isNaN(val) && val > 0) { gridCanvas.setGridConfig({ canvasWidth: val }); mazeDrawer.updateConfig(gridCanvas.getGridConfig()) }
   })
   document.getElementById('canvasHeight')?.addEventListener('input', e => {
     const val = parseInt(e.target.value)
-    if (!isNaN(val) && val > 0) gridCanvas.setGridConfig({ canvasHeight: val })
-  })
-  document.getElementById('gridOffsetX')?.addEventListener('input', e => {
-    const val = parseInt(e.target.value)
-    if (!isNaN(val)) gridCanvas.setGridConfig({ offsetX: val })
-  })
-  document.getElementById('gridOffsetY')?.addEventListener('input', e => {
-    const val = parseInt(e.target.value)
-    if (!isNaN(val)) gridCanvas.setGridConfig({ offsetY: val })
+    if (!isNaN(val) && val > 0) { gridCanvas.setGridConfig({ canvasHeight: val }); mazeDrawer.updateConfig(gridCanvas.getGridConfig()) }
   })
   document.getElementById('gridBgColor')?.addEventListener('input', e => {
     gridCanvas.setGridConfig({ bgColor: e.target.value })
@@ -145,61 +294,73 @@ function bindEvents() {
     gridCanvas.setGridConfig({ gridLineColor: e.target.value })
   })
 
-  // グリッド表示/非表示（CHG_011）
+  // レイヤーパネル: セルサイズ・オフセットのリアルタイム反映（レイヤーごと）
+  const onLayerGridInput = () => {
+    const cellSize = parseInt(document.getElementById('layerCellSize')?.value) || 60
+    const offsetX = parseInt(document.getElementById('layerOffsetX')?.value) || 0
+    const offsetY = parseInt(document.getElementById('layerOffsetY')?.value) || 0
+    layerManager.setLayerGridConfig(layerManager.getActiveLayerId(), { cellSize, offsetX, offsetY })
+    gridCanvas.applyLayerGridConfig({ cellSize, offsetX, offsetY })
+    mazeDrawer.updateConfig(gridCanvas.getGridConfig())
+  }
+  document.getElementById('layerCellSize')?.addEventListener('input', onLayerGridInput)
+  document.getElementById('layerOffsetX')?.addEventListener('input', onLayerGridInput)
+  document.getElementById('layerOffsetY')?.addEventListener('input', onLayerGridInput)
+
+  // グリッド表示/非表示（レイヤーごとに状態保持）
   document.getElementById('toggleGridBtn')?.addEventListener('click', () => {
     gridVisible = !gridVisible
     gridCanvas.toggleGrid(gridVisible)
+    layerManager.setLayerGridVisible(layerManager.getActiveLayerId(), gridVisible)
     const btn = document.getElementById('toggleGridBtn')
     if (btn) btn.textContent = gridVisible ? 'グリッド非表示' : 'グリッド表示'
   })
 
-  // 迷路モード切り替え（CHG_006）
-  document.getElementById('normalModeBtn')?.addEventListener('click', () => {
-    isMazeMode = false
-    mazeDrawer.disable()
-    document.getElementById('normalModeBtn')?.classList.add('active')
-    document.getElementById('mazeModeBtn')?.classList.remove('active')
-  })
-  document.getElementById('mazeModeBtn')?.addEventListener('click', () => {
-    isMazeMode = true
-    mazeDrawer.enable()
-    document.getElementById('mazeModeBtn')?.classList.add('active')
-    document.getElementById('normalModeBtn')?.classList.remove('active')
-  })
-
   // レイヤー追加（CHG_005）
   document.getElementById('addLayerBtn')?.addEventListener('click', () => {
-    layerManager.addLayer()
+    layerManager.addLayer(null, layerManager.getActiveLayerGridConfig())
     renderLayerList()
   })
 
-  // テキスト追加（CHG_004）
+  // テキスト追加（CHG_004）: 複数文字は右へ連続配置、同時追加はグループ化
   document.getElementById('addTextBtn')?.addEventListener('click', () => {
-    const rawText = document.getElementById('textInput')?.value || 'A'
-    const text = rawText.charAt(0)
+    const text = document.getElementById('textInput')?.value || ''
+    if (!text) return
     const fontFamily = document.getElementById('fontFamily')?.value || 'Arial'
     const fill = document.getElementById('textColor')?.value || '#000000'
-    const result = gridCanvas.addElement('text', { row: currentRow, col: currentCol }, { text, fontFamily, fill })
-    if (result && typeof result.then === 'function') {
-      result.then(obj => { if (obj) layerManager.registerObject(obj) })
-    } else if (result) {
-      layerManager.registerObject(result)
+    const groupId = text.length > 1 ? ('tg-' + Date.now()) : null
+    let col = currentCol
+    for (const char of text) {
+      const opts = { text: char, fontFamily, fill }
+      if (groupId) opts.groupId = groupId
+      const result = gridCanvas.addElement('text', { row: currentRow, col }, opts)
+      if (result) layerManager.registerObject(result)
+      col++
     }
+    currentCol = col
+    const colEl = document.getElementById('selectedCol')
+    if (colEl) colEl.textContent = currentCol
     setDirty(true)
-    showToast('テキストを追加しました')
+    showToast(text.length + '文字を追加しました')
+  })
+
+  // 「透過」チェックで塗り色ピッカーを無効化
+  document.getElementById('shapeFillNone')?.addEventListener('change', e => {
+    const colorInput = document.getElementById('shapeFill')
+    if (colorInput) colorInput.disabled = e.target.checked
   })
 
   // 図形追加
   document.getElementById('addShapeBtn')?.addEventListener('click', () => {
     const shapeName = document.getElementById('shapeName')?.value || 'rect'
-    const fill = document.getElementById('shapeFill')?.value || '#4a90d9'
+    const fillNone = document.getElementById('shapeFillNone')?.checked
+    const fill = fillNone ? null : (document.getElementById('shapeFill')?.value || '#4a90d9')
     const stroke = document.getElementById('shapeStroke')?.value || '#2c5f8a'
     const result = gridCanvas.addElement('shape', { row: currentRow, col: currentCol }, { shapeName, fill, stroke, strokeWidth: 2 })
-    if (result && typeof result.then === 'function') {
-      result.then(obj => { if (obj) layerManager.registerObject(obj) })
-    } else if (result) {
-      layerManager.registerObject(result)
-    }
+    if (result) layerManager.registerObject(result)
+    currentCol++
+    const colEl = document.getElementById('selectedCol')
+    if (colEl) colEl.textContent = currentCol
     setDirty(true)
     showToast('図形を追加しました')
   })
@@ -213,6 +374,9 @@ function bindEvents() {
       const opacity = parseFloat(document.getElementById('imageOpacity')?.value) || 1
       const result = await gridCanvas.addElement('image', { row: currentRow, col: currentCol }, { src: ev.target.result, opacity })
       if (result) layerManager.registerObject(result)
+      currentCol++
+      const colEl = document.getElementById('selectedCol')
+      if (colEl) colEl.textContent = currentCol
       setDirty(true)
       showToast('画像を追加しました')
     }
@@ -269,35 +433,63 @@ function bindEvents() {
       if (!readResult.data) { showToast('読み込み失敗: ' + readResult.error, 'error'); return }
       const parsed = JSON.parse(readResult.data)
       gridCanvas.setGridConfig(parsed)
-      if (parsed.fabricJson) gridCanvas.loadState(parsed.fabricJson)
+      gridCanvas.cancelDebouncedUndo()
+      const loadPromise = parsed.fabricJson ? gridCanvas.loadState(parsed.fabricJson) : Promise.resolve()
+      loadPromise.then(() => { mazeDrawer.rebuildLines(); layerManager.rebuildFromCanvas(); layerManager.syncLayerSelectability(); syncGridConfigUI() })
       setDirty(false)
       showToast('プロジェクトを読み込みました')
     } catch (e) { showToast('エラー: ' + e.message, 'error') }
   })
 
+  const afterUndoRedo = () => {
+    mazeDrawer.rebuildLines()
+    layerManager.rebuildFromCanvas()
+    layerManager.syncLayerSelectability()
+    syncGridConfigUI()
+    syncLayerGridVisibility()
+    syncLayerGridConfig()
+  }
+
   // Undo/Redo ボタン
-  document.getElementById('undoBtn')?.addEventListener('click', () => { gridCanvas.undo(); setDirty(true) })
-  document.getElementById('redoBtn')?.addEventListener('click', () => { gridCanvas.redo() })
+  document.getElementById('undoBtn')?.addEventListener('click', () => {
+    const p = gridCanvas.undo()
+    if (p) p.then(afterUndoRedo)
+    setDirty(true)
+  })
+  document.getElementById('redoBtn')?.addEventListener('click', () => {
+    const p = gridCanvas.redo()
+    if (p) p.then(afterUndoRedo)
+  })
 
   // キーボードショートカット
   document.addEventListener('keydown', e => {
-    if (e.ctrlKey && !e.shiftKey && e.key === 'z') { e.preventDefault(); gridCanvas.undo() }
-    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); gridCanvas.redo() }
+    if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+      e.preventDefault()
+      const p = gridCanvas.undo()
+      if (p) p.then(afterUndoRedo)
+    }
+    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+      e.preventDefault()
+      const p = gridCanvas.redo()
+      if (p) p.then(afterUndoRedo)
+    }
   })
 
   // 選択オブジェクト削除 (Delete/Backspace)
   document.addEventListener('keydown', e => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
       const active = gridCanvas.fabricCanvas.getActiveObject()
-      if (active) {
-        if (active.type === 'activeSelection') {
-          active.getObjects().forEach(o => gridCanvas.removeElement(o))
-          gridCanvas.fabricCanvas.discardActiveObject()
-        } else {
-          gridCanvas.removeElement(active)
-        }
-        gridCanvas.fabricCanvas.renderAll()
-      }
+      if (!active) return
+      // getObjects() の生配列を走査中に変更しないようスナップショットを取る
+      const targets = active.type === 'activeSelection' ? [...active.getObjects()] : [active]
+      gridCanvas.fabricCanvas.discardActiveObject()
+      targets.forEach(o => {
+        gridCanvas.fabricCanvas.remove(o)
+        layerManager.unregisterObject(o)
+      })
+      gridCanvas.fabricCanvas.renderAll()
+      gridCanvas._pushUndo()
+      setDirty(true)
     }
   })
 }

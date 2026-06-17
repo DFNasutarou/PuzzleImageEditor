@@ -1,7 +1,7 @@
 /**
  * GridCanvas (UNT-001)
  * fabric.js v6 ベースのグリッドキャンバス管理クラス。
- * 依存: window.ElementPlacer, window.EditorUndoManager, window.ElementCatalog, グローバル fabric
+ * 依存: window.ElementPlacer, window.EditorUndoManager, グローバル fabric
  */
 class GridCanvas {
   constructor(canvasEl, gridConfig) {
@@ -26,18 +26,55 @@ class GridCanvas {
     })
     this.placer = new window.ElementPlacer(this.gridConfig)
     this.undoMgr = new window.EditorUndoManager(50)
-    this.catalog = new window.ElementCatalog()
     this._gridLines = []
     this._gridVisible = true
+    this._undoDebounceTimer = null
+    this._fixingSelection = false
     this.drawGrid()
     // 変更をundoスタックに記録
     this.fabricCanvas.on('object:modified', () => this._pushUndo())
+    // グリッド線・迷路線が範囲選択に含まれないよう強制除外
+    this.fabricCanvas.on('selection:created', () => this._excludeSystemLinesFromSelection())
+    this.fabricCanvas.on('selection:updated', () => this._excludeSystemLinesFromSelection())
     // 初期状態を記録
     this._pushUndo()
   }
 
+  _excludeSystemLinesFromSelection() {
+    if (this._fixingSelection) return
+    const canvas = this.fabricCanvas
+    const sel = canvas.getActiveObject()
+    if (!sel) return
+    const isSystem = o => o.data && (o.data.type === 'grid-line' || o.data.type === 'maze-line')
+    if (sel.type === 'activeSelection') {
+      const sysObjs = sel.getObjects().filter(isSystem)
+      if (sysObjs.length === 0) return
+      const keepObjs = sel.getObjects().filter(o => !isSystem(o))
+      this._fixingSelection = true
+      canvas.discardActiveObject()
+      if (keepObjs.length === 1) {
+        canvas.setActiveObject(keepObjs[0])
+      } else if (keepObjs.length > 1) {
+        canvas.setActiveObject(new fabric.ActiveSelection(keepObjs, { canvas }))
+      }
+      canvas.requestRenderAll()
+      this._fixingSelection = false
+    } else if (isSystem(sel)) {
+      this._fixingSelection = true
+      canvas.discardActiveObject()
+      canvas.requestRenderAll()
+      this._fixingSelection = false
+    }
+  }
+
   _pushUndo() {
-    this.undoMgr.push(this.getSnapshot())
+    const fabricJson = this.fabricCanvas.toJSON(['data'])
+    fabricJson.objects = (fabricJson.objects || []).filter(o => !(o.data && o.data.type === 'grid-line'))
+    this.undoMgr.push(JSON.stringify({
+      _v: 2,
+      gridConfig: Object.assign({}, this.gridConfig),
+      fabricJson: fabricJson
+    }))
   }
 
   drawGrid() {
@@ -126,23 +163,24 @@ class GridCanvas {
       if (json.offsetY !== undefined) configUpdate.offsetY = json.offsetY
       if (json.canvasWidth !== undefined) configUpdate.canvasWidth = json.canvasWidth
       if (json.canvasHeight !== undefined) configUpdate.canvasHeight = json.canvasHeight
-      this.setGridConfig(configUpdate)
+      this._setGridConfigInternal(configUpdate)
+    }
+    const afterLoad = () => {
+      this.drawGrid()
+      this.fabricCanvas.renderAll()
+      this.undoMgr.clear()
+      this._pushUndo()
     }
     if (json.fabricJson) {
       // テンプレートJSONの場合
-      this.fabricCanvas.loadFromJSON(JSON.parse(json.fabricJson)).then(() => {
-        this.drawGrid()
-        this.fabricCanvas.renderAll()
-      })
+      return this.fabricCanvas.loadFromJSON(JSON.parse(json.fabricJson)).then(afterLoad)
     } else if (json.objects !== undefined) {
       // fabric JSONの場合
-      this.fabricCanvas.loadFromJSON(json).then(() => {
-        this.drawGrid()
-        this.fabricCanvas.renderAll()
-      })
+      return this.fabricCanvas.loadFromJSON(json).then(afterLoad)
     } else {
       // defaultGridのみのテンプレート
       this.clearCanvas()
+      return Promise.resolve()
     }
   }
 
@@ -159,7 +197,7 @@ class GridCanvas {
     return Object.assign({}, this.gridConfig)
   }
 
-  setGridConfig(newConfig) {
+  _setGridConfigInternal(newConfig) {
     Object.assign(this.gridConfig, newConfig)
     this.placer = new window.ElementPlacer(this.gridConfig)
     this.fabricCanvas.setWidth(this.gridConfig.canvasWidth)
@@ -168,24 +206,52 @@ class GridCanvas {
     this.drawGrid()
   }
 
-  undo() {
-    const snap = this.undoMgr.undo()
-    if (!snap) return
-    const json = JSON.parse(snap)
-    this.fabricCanvas.loadFromJSON(json).then(() => {
+  setGridConfig(newConfig) {
+    this._setGridConfigInternal(newConfig)
+    clearTimeout(this._undoDebounceTimer)
+    this._undoDebounceTimer = setTimeout(() => this._pushUndo(), 500)
+  }
+
+  // レイヤー切替時にセルサイズ・オフセットのみ更新（undo不要）
+  applyLayerGridConfig(layerConfig) {
+    if (layerConfig.cellSize !== undefined) this.gridConfig.cellSize = layerConfig.cellSize
+    if (layerConfig.offsetX !== undefined) this.gridConfig.offsetX = layerConfig.offsetX
+    if (layerConfig.offsetY !== undefined) this.gridConfig.offsetY = layerConfig.offsetY
+    this.placer = new window.ElementPlacer(this.gridConfig)
+    this.drawGrid()
+  }
+
+  cancelDebouncedUndo() {
+    clearTimeout(this._undoDebounceTimer)
+    this._undoDebounceTimer = null
+  }
+
+  _applySnapshot(snap) {
+    const data = JSON.parse(snap)
+    if (data._v === 2) {
+      this._setGridConfigInternal(data.gridConfig)
+      return this.fabricCanvas.loadFromJSON(data.fabricJson).then(() => {
+        this.drawGrid()
+        this.fabricCanvas.renderAll()
+      })
+    }
+    // 旧形式 (v1: gridConfigなし)
+    return this.fabricCanvas.loadFromJSON(data).then(() => {
       this.drawGrid()
       this.fabricCanvas.renderAll()
     })
   }
 
+  undo() {
+    const snap = this.undoMgr.undo()
+    if (!snap) return
+    return this._applySnapshot(snap)
+  }
+
   redo() {
     const snap = this.undoMgr.redo()
     if (!snap) return
-    const json = JSON.parse(snap)
-    this.fabricCanvas.loadFromJSON(json).then(() => {
-      this.drawGrid()
-      this.fabricCanvas.renderAll()
-    })
+    return this._applySnapshot(snap)
   }
 }
 
