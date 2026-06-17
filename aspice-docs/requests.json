@@ -4,9 +4,9 @@
     "title": "PNG保存ボタンは横長すぎ",
     "description": "綺麗なレイアウトを考えて欲しい",
     "priority": "medium",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "ツールバーをflex横並びに再配置。button.btn-primaryのCSS特異度問題により width:100% が残っていたため、#toolbar button { width: auto } を追加して修正。",
     "created": "2026-06-12"
   },
   {
@@ -14,9 +14,9 @@
     "title": "グリッドの解釈が違いそう",
     "description": "グリッドは文字や図形等の配置のガイドとして使われるだけ。文字や図形がその大きさにそって描画・配置されるようにする。表示のON/OFFを可能とする",
     "priority": "high",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "グリッドは描画ガイドのみ（選択・移動可能）。要素はcellSizeに合わせてサイズ設定。グリッド表示/非表示ボタン実装済み。",
     "created": "2026-06-12"
   },
   {
@@ -24,9 +24,9 @@
     "title": "グリッドのパラメータは適用を押さなくても変わるように",
     "description": "セルサイズを設定するとその大きさにそってグリッドが表示されるようにする。また、行数、列数は設定の必要がなく、画面いっぱいに表示されるようにする。代わりに、オフセットを設定できるようにする。",
     "priority": "high",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "inputイベントでリアルタイム反映済み。行数・列数はキャンバスサイズから自動算出。オフセットX/Y設定追加済み。",
     "created": "2026-06-12"
   },
   {
@@ -34,9 +34,9 @@
     "title": "テキストの配置",
     "description": "テキストは、現在指定しているグリッド1セルにつき1文字が表示されるように隙間を開ける。",
     "priority": "high",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "1クリック1文字配置を実装。originX/originY: 'center' によりセル中央に文字を配置するよう修正済み。",
     "created": "2026-06-12"
   },
   {
@@ -44,9 +44,9 @@
     "title": "レイヤー機能がほしい",
     "description": "同じ画像でもレイヤーを指定したい。同じレイヤーは同じグリッドサイズにする。",
     "priority": "medium",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "レイヤー追加・アクティブ切替・表示/非表示・削除を実装済み。全レイヤー共通グリッドサイズ。",
     "created": "2026-06-12"
   },
   {
@@ -54,9 +54,9 @@
     "title": "テンプレートが思ってたのと違うのでいらないかも",
     "description": "テンプレートの代わりに、\n迷路を書くために、グリッドに沿って線を引く/消すモードを追加してほしい",
     "priority": "medium",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "迷路モード（グリッド境界線をクリック/ドラッグで描画・消去）を実装済み。テンプレート機能は引き続き利用可能（クロスワード・文字グリッド等の5種類）。",
     "created": "2026-06-12"
   },
   {
@@ -64,9 +64,9 @@
     "title": "画像サイズの指定が欲しい",
     "description": "正方形のキャンバスしか作れないので、縦横の設定をつけたい",
     "priority": "medium",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "キャンバス幅・高さを独立した数値入力で設定可能。非正方形キャンバスに対応済み。",
     "created": "2026-06-12"
   },
   {
@@ -74,9 +74,9 @@
     "title": "配置位置の設定が面倒",
     "description": "数値で入力するのは面倒なので、クリックしたところに該当する位置が勝手に入るようにしてほしい",
     "priority": "medium",
-    "status": "open",
+    "status": "closed",
     "relatedDocs": [],
-    "notes": "",
+    "notes": "キャンバスクリックで行・列を自動設定済み。サイドバーに選択中セル表示あり。",
     "created": "2026-06-12"
   }
 ]

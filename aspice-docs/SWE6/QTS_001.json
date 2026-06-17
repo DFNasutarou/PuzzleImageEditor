@@ -5,7 +5,7 @@
   "process": "SWE6",
   "upstream": [
     "ITS_001",
-    "SRS_003"
+    "SRS_002"
   ],
   "created": "2026-06-12",
   "content": {
