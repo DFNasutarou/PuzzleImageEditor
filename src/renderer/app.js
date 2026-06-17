@@ -101,11 +101,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isMazeMode) return
     const obj = e.target
     const { cellSize } = gridCanvas.getGridConfig()
-    const rw = obj.width * obj.scaleX
-    const rh = obj.height * obj.scaleY
+    const corner = e.transform && e.transform.corner
+    const orig   = e.transform && e.transform.original
+
+    // flipで scaleX が負になっても正しく扱うよう絶対値で実寸を計算
+    const rw = obj.width  * Math.abs(obj.scaleX)
+    const rh = obj.height * Math.abs(obj.scaleY)
     const sw = Math.max(cellSize, Math.round(rw / cellSize) * cellSize)
     const sh = Math.max(cellSize, Math.round(rh / cellSize) * cellSize)
-    obj.set({ scaleX: sw / obj.width, scaleY: sh / obj.height })
+
+    const onLeft = corner === 'tl' || corner === 'ml' || corner === 'bl'
+    const onTop  = corner === 'tl' || corner === 'mt' || corner === 'tr'
+    let newLeft = obj.left
+    let newTop  = obj.top
+
+    if (obj.originX === 'center') {
+      // 中心原点（テキスト等）: ハンドル側に中心をずらす
+      const dw = sw - rw
+      const dh = sh - rh
+      newLeft = obj.left + (onLeft ? -dw : dw) / 2
+      newTop  = obj.top  + (onTop  ? -dh : dh) / 2
+    } else if (orig) {
+      // 左上原点（図形・画像）: ドラッグ開始時のアンカー辺を基準に計算
+      // rw が最小値を下回った場合もアンカーが固定されるため位置が動かない
+      const origW = obj.width  * Math.abs(orig.scaleX)
+      const origH = obj.height * Math.abs(orig.scaleY)
+      if (onLeft) newLeft = orig.left + origW - sw
+      if (onTop)  newTop  = orig.top  + origH - sh
+    } else {
+      if (onLeft) newLeft = obj.left + rw - sw
+      if (onTop)  newTop  = obj.top  + rh - sh
+    }
+
+    obj.set({ scaleX: sw / obj.width, scaleY: sh / obj.height, left: newLeft, top: newTop, flipX: false, flipY: false })
     obj.setCoords()
   })
 
