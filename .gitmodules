@@ -1,0 +1,3 @@
+[submodule "aspice"]
+	path = aspice
+	url = https://github.com/motonaga-shunsuke-dites/AutomotiveSPICE.git
