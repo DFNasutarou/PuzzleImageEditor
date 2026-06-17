@@ -1,0 +1,215 @@
+{
+  "id": "QTR_001",
+  "type": "QTR",
+  "version": "1.0",
+  "process": "SWE6",
+  "upstream": [
+    "QTS_001"
+  ],
+  "created": "2026-06-12",
+  "content": {
+    "results": [
+      {
+        "tcId": "TC-QTS-001",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-002",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-003",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-004",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-005",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-006",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-007",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      },
+      {
+        "tcId": "TC-QTS-008",
+        "defect": "",
+        "verdict": "NotRun",
+        "actualResult": ""
+      }
+    ],
+    "summary": "（実装後に記入）TC-QTS-001〜008 の8件を実施予定。",
+    "coverage": "（実装後に記入）SWR-001〜010, SWR-N01〜N04 のカバレッジ確認",
+    "execDate": "",
+    "version": "1.0",
+    "approver": "",
+    "conclusion": "未実施（実装フェーズ完了後に記入）",
+    "author": "謎制作者",
+    "environment": "Electron 32 / Windows 11 / 実ファイルシステム",
+    "status": "Draft",
+    "refSpec": "QTS_001",
+    "title": "謎解き用画像生成アプリ 適格性テスト結果報告書"
+  },
+  "status": "Draft",
+  "downstream": [],
+  "title": "謎解き用画像生成アプリ 適格性テスト結果報告書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "results": [
+          {
+            "tcId": "TC-QTS-001",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-002",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-003",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-004",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-005",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-006",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-007",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-008",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          }
+        ],
+        "summary": "（実装後に記入）TC-QTS-001〜008 の8件を実施予定。",
+        "coverage": "（実装後に記入）SWR-001〜010, SWR-N01〜N04 のカバレッジ確認",
+        "execDate": "",
+        "version": "1.0",
+        "approver": "",
+        "conclusion": "未実施（実装フェーズ完了後に記入）",
+        "author": "謎制作者",
+        "environment": "Electron 32 / Windows 11 / 実ファイルシステム",
+        "status": "Draft",
+        "refSpec": "QTS_001",
+        "title": "謎解き用画像生成アプリ 適格性テスト結果報告書"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "results": [
+          {
+            "tcId": "TC-QTS-001",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-002",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-003",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-004",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-005",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-006",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-007",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          },
+          {
+            "tcId": "TC-QTS-008",
+            "defect": "",
+            "verdict": "NotRun",
+            "actualResult": ""
+          }
+        ],
+        "summary": "（実装後に記入）TC-QTS-001〜008 の8件を実施予定。",
+        "coverage": "（実装後に記入）SWR-001〜010, SWR-N01〜N04 のカバレッジ確認",
+        "execDate": "",
+        "version": "1.0",
+        "approver": "",
+        "conclusion": "未実施（実装フェーズ完了後に記入）",
+        "author": "謎制作者",
+        "environment": "Electron 32 / Windows 11 / 実ファイルシステム",
+        "status": "Draft",
+        "refSpec": "QTS_001",
+        "title": "謎解き用画像生成アプリ 適格性テスト結果報告書"
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}

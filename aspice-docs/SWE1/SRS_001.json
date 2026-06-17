@@ -1,0 +1,460 @@
+{
+  "id": "SRS_001",
+  "type": "SRS",
+  "version": "2.0",
+  "process": "SWE1",
+  "upstream": [],
+  "created": "2026-06-12",
+  "content": {
+    "purpose": "オンライン謎解きイベントで使用する謎解き画像を効率的に制作するためのデスクトップアプリケーションのソフトウェア要件を定義する。本文書は設計・テストの基準として使用する。",
+    "issues": [
+      {
+        "status": "Open",
+        "content": "テンプレートGUIエディターの実装工数が大きい。MVP版ではJSONベースのテンプレート定義のみとし、GUIエディターを後続フェーズとすることを検討すべき。",
+        "id": "ISS-01",
+        "owner": "謎制作者",
+        "impact": "SWR-001, SWR-002"
+      },
+      {
+        "status": "Open",
+        "content": "SVGに画像を埋め込む場合、Base64エンコードによりファイルサイズが増大する可能性がある。外部参照と埋め込みの選択オプションが必要か要確認。",
+        "id": "ISS-02",
+        "owner": "謎制作者",
+        "impact": "SWR-008"
+      }
+    ],
+    "version": "2.0",
+    "approver": "",
+    "author": "謎制作者",
+    "outOfScope": "謎解きプレイヤー向けの解答UIおよびWeb配信プラットフォーム。クラウド同期・マルチユーザー機能。",
+    "scope": "Electronをベースとするデスクトップアプリケーション全体。グリッドエディター・プロジェクト保存/読み込み・画像出力（PNG/SVG）・要素ライブラリ・レイヤー管理・迷路モードを対象とする。",
+    "status": "Draft",
+    "title": "謎解き用画像生成アプリ ソフトウェア要件仕様書",
+    "nfRequirements": [
+      {
+        "source": "謎制作者ヒアリング 2026-06-12",
+        "target": "10秒以内",
+        "category": "性能",
+        "description": "システムは1920×1080px・300dpiのPNG出力を10秒以内に完了すること。",
+        "id": "SWR-N01"
+      },
+      {
+        "source": "UX要件",
+        "target": "100ms以内",
+        "category": "性能",
+        "description": "グリッドエディターの操作（文字入力・図形配置）に対するUIの応答時間は100ms以内であること。",
+        "id": "SWR-N02"
+      },
+      {
+        "source": "謎制作者ヒアリング 2026-06-12",
+        "target": "テキスト形式",
+        "category": "保守性",
+        "description": "プロジェクトファイルはJSON形式で保存し、バージョン管理システムで管理できること。",
+        "id": "SWR-N03"
+      },
+      {
+        "source": "UX要件",
+        "target": "未保存データ損失ゼロ",
+        "category": "信頼性",
+        "description": "システムは作業中の未保存状態でアプリを閉じようとした場合、警告ダイアログを表示すること。",
+        "id": "SWR-N04"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "SWR-001",
+        "description": "システムは現在の作業状態をプロジェクトJSONファイルとしてローカルに保存し、後で読み込んで再開できること。テンプレート機能は廃止し、プロジェクト単位での保存・読み込みに特化する。",
+        "source": "STK_001",
+        "acceptance": "「プロジェクト保存」でJSONファイルが出力される。保存したJSONを読み込んでエディターが正しく復元される。グリッド設定・レイヤー情報・配置要素がすべて復元できる。",
+        "priority": "Must",
+        "title": "プロジェクト保存・読み込み",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-002",
+        "description": "システムはユーザーがグリッド設定を自由に構成できること。設定項目はセルサイズ・offsetX・offsetY・キャンバス幅・キャンバス高さ・背景色とする。グリッドの行数・列数はCanvasサイズとセルサイズから自動計算して表示する。設定変更はリアルタイムにCanvasへ反映され、適用ボタンは不要とする。",
+        "source": "STK_001",
+        "acceptance": "セルサイズ・offsetX・offsetY・幅・高さ・背景色を変更するとCanvasが即座に更新される。行数・列数はCanvas領域とセルサイズから自動算出されてグリッドいっぱいに表示される。",
+        "priority": "Must",
+        "title": "グリッド設定",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-003",
+        "description": "システムはキャンバスをクリックすることで配置対象セルを自動選択し、選択セルに1セル1文字でセルサイズにフィットした文字を配置できること。フォント・文字色を設定できること。",
+        "source": "STK_001",
+        "acceptance": "キャンバスをクリックすると対応するセル座標（行・列）が自動設定される。文字はセルサイズに合わせたフォントサイズで1セルに1文字配置される。フォントと文字色が変更できる。",
+        "priority": "Must",
+        "title": "グリッドエディター（文字・数字）",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-004",
+        "description": "システムはグリッド上のセル範囲に図形（矩形・円・三角形・矢印など）を配置できること。図形の色・枠線を設定できること。",
+        "source": "STK_001",
+        "acceptance": "基本図形（5種類以上）をドラッグ＆ドロップでグリッドに配置できる。図形の色・枠線が設定できる。",
+        "priority": "Must",
+        "title": "グリッドエディター（図形・シルエット）",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-005",
+        "description": "システムはローカルの画像ファイル（PNG・JPG・SVG）をグリッド上に配置し、他の要素と重ね合わせて合成できること。不透明度を調整できること。",
+        "source": "STK_001",
+        "acceptance": "画像ファイルを読み込んでグリッド上に配置できる。不透明度0～100%を設定できる。",
+        "priority": "Must",
+        "title": "画像レイヤー合成",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-006",
+        "description": "システムはセル・図形・テキストに対して単色・線形グラデーション・放射グラデーションを適用できること。",
+        "source": "STK_001",
+        "acceptance": "カラーピッカーで任意の色を選択できる。線形・放射グラデーションのプレビューが表示される。",
+        "priority": "Should",
+        "title": "色・グラデーション設定",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-007",
+        "description": "システムは編集中の謎解き画像をPNG形式でローカルにエクスポートできること。解像度（72/96/150/300 dpi）を選択できること。",
+        "source": "STK_001",
+        "acceptance": "「PNG保存」でファイル保存ダイアログが開き、指定パスにPNGが出力される。出力解像度が選択した値と一致する。",
+        "priority": "Must",
+        "title": "PNG出力",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-008",
+        "description": "システムは編集中の謎解き画像をSVG形式でローカルにエクスポートできること。テキスト要素は文字として出力すること。",
+        "source": "STK_001",
+        "acceptance": "「SVG保存」でSVGファイルが出力される。テキスト要素がSVG上で選択・コピーできる。",
+        "priority": "Must",
+        "title": "SVG出力",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-009",
+        "description": "システムは制作者が作成したプロジェクトをローカルファイルとして保存し、後で読み込んで再利用できること。",
+        "source": "STK_001",
+        "acceptance": "「プロジェクトとして保存」でJSONファイルが出力される。保存したJSONを読み込んでエディターが正しく復元される。",
+        "priority": "Must",
+        "title": "プロジェクトの保存と再利用",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-010",
+        "description": "システムはグリッド上の謎解き画像を任意のセル範囲に分割して複数の画像ファイルとして出力できること。",
+        "source": "STK_001",
+        "acceptance": "分割範囲を指定して「分割出力」すると、連番ファイル名で複数の画像が出力される。",
+        "priority": "Should",
+        "title": "画像分割・スライス出力",
+        "status": "Draft"
+      },
+      {
+        "id": "SWR-011",
+        "description": "システムはグリッド線の表示・非表示をトグルボタンで切り替えできること。グリッドは配置ガイド線として機能し、非表示時もセル座標計算は継続して動作する。",
+        "source": "STK_001",
+        "acceptance": "グリッド表示OFFにするとCanvas上のグリッド線が消える。グリッド表示OFFの状態でも要素の配置・編集が正常に動作する。",
+        "priority": "Must",
+        "title": "グリッド線表示ON/OFF",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-012",
+        "description": "システムはキャンバスをクリックした際に、クリック位置に対応するグリッドセル座標（行・列）を自動計算して配置セルとして設定すること。",
+        "source": "STK_001",
+        "acceptance": "キャンバス任意の位置をクリックすると、対応するセル座標（行・列）がUI上に自動表示・設定される。",
+        "priority": "Must",
+        "title": "キャンバスクリックによる配置セル自動選択",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-013",
+        "description": "システムはキャンバスの幅と高さをピクセル単位で独立して設定できること。幅・高さを変更した場合、グリッドの行数・列数は自動的に再計算される。",
+        "source": "STK_001",
+        "acceptance": "幅・高さを独立して変更するとCanvasサイズが更新され、グリッド行数・列数が自動再計算される。",
+        "priority": "Must",
+        "title": "キャンバスの縦横サイズ独立設定",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-014",
+        "description": "システムは複数のレイヤーを管理できること。レイヤーは同一グリッドサイズを共有し、それぞれ表示・非表示を独立して切り替えられること。レイヤーの追加・削除・順序変更が可能であること。",
+        "source": "STK_001",
+        "acceptance": "レイヤーパネルで新規レイヤーを追加できる。各レイヤーの表示/非表示を切り替えるとCanvasに即座に反映される。全レイヤーが同一のグリッドサイズを共有している。",
+        "priority": "Should",
+        "title": "レイヤー管理",
+        "status": "Agreed"
+      },
+      {
+        "id": "SWR-015",
+        "description": "システムは迷路モードを提供すること。迷路モードでは、グリッドセルの境界に沿って線を引く・消す操作ができること。クリックまたはドラッグで線の追加・削除が可能であること。",
+        "source": "STK_001",
+        "acceptance": "迷路モードに切り替えるとセル境界線のクリック/ドラッグで線が追加される。同じ操作で線の削除もできる。",
+        "priority": "Should",
+        "title": "迷路モード",
+        "status": "Agreed"
+      }
+    ]
+  },
+  "status": "Draft",
+  "downstream": [],
+  "title": "謎解き用画像生成アプリ ソフトウェア要件仕様書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "purpose": "オンライン謎解きイベントで使用する謎解き画像を効率的に制作するためのデスクトップアプリケーションのソフトウェア要件を定義する。本文書は設計・テストの基準として使用する。",
+        "issues": [
+          {
+            "status": "Open",
+            "content": "テンプレートGUIエディターの実装工数が大きい。MVP版ではJSONベースのテンプレート定義のみとし、GUIエディターを後続フェーズとすることを検討すべき。",
+            "id": "ISS-01",
+            "owner": "謎制作者",
+            "impact": "SWR-001, SWR-002"
+          },
+          {
+            "status": "Open",
+            "content": "SVGに画像を埋め込む場合、Base64エンコードによりファイルサイズが増大する可能性がある。外部参照と埋め込みの選択オプションが必要か要確認。",
+            "id": "ISS-02",
+            "owner": "謎制作者",
+            "impact": "SWR-008"
+          }
+        ],
+        "version": "1.0",
+        "approver": "",
+        "author": "謎制作者",
+        "outOfScope": "謎解きプレイヤー向けの解答UIおよびWeb配信プラットフォーム。クラウド同期・マルチユーザー機能。",
+        "scope": "Electronをベースとするデスクトップアプリケーション全体。グリッドエディター・テンプレート管理・画像出力（PNG/SVG）・要素ライブラリを対象とする。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ ソフトウェア要件仕様書",
+        "nfRequirements": [
+          {
+            "source": "謎制作者ヒアリング 2026-06-12",
+            "target": "10秒以内",
+            "category": "性能",
+            "description": "システムは1920×1080px・300dpiのPNG出力を10秒以内に完了すること。",
+            "id": "SWR-N01"
+          },
+          {
+            "source": "UX要件",
+            "target": "100ms以内",
+            "category": "性能",
+            "description": "グリッドエディターの操作（文字入力・図形配置）に対するUIの応答時間は100ms以内であること。",
+            "id": "SWR-N02"
+          },
+          {
+            "source": "謎制作者ヒアリング 2026-06-12",
+            "target": "テキスト形式",
+            "category": "保守性",
+            "description": "テンプレートファイルはJSONまたはSVG形式で保存し、バージョン管理システムで管理できること。",
+            "id": "SWR-N03"
+          },
+          {
+            "source": "UX要件",
+            "target": "未保存データ損失ゼロ",
+            "category": "信頼性",
+            "description": "システムは作業中の未保存状態でアプリを閉じようとした場合、警告ダイアログを表示すること。",
+            "id": "SWR-N04"
+          }
+        ],
+        "requirements": [
+          {
+            "id": "SWR-001",
+            "description": "システムは謎解きの種類（文字グリッド・数字暗号・図形配置・クロスワード・迷路など）に対応したひな型テンプレートを提供すること。ユーザーはひな型を選択して作業を開始できること。",
+            "source": "STK_001",
+            "acceptance": "全ひな型カテゴリから選択してエディターが起動できる。ひな型のグリッド設定が正しく反映されている。",
+            "priority": "Must",
+            "title": "テンプレート管理",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-002",
+            "description": "システムはユーザーが白紙からテンプレートを作成できること。グリッドサイズ（行数・列数）、セルサイズ、背景色を自由に設定できること。",
+            "source": "STK_001",
+            "acceptance": "任意のグリッドサイズ（最大100×100）で新規テンプレートを作成できる。グリッド設定が画面に反映される。",
+            "priority": "Must",
+            "title": "フルカスタムテンプレート作成",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-003",
+            "description": "システムはグリッド上の各セルに文字・数字・記号を入力・配置できること。フォント・文字サイズ・文字色を設定できること。",
+            "source": "STK_001",
+            "acceptance": "任意のセルをクリックして文字入力できる。フォントと文字色が変更できる。複数セルに一括設定できる。",
+            "priority": "Must",
+            "title": "グリッドエディター（文字・数字）",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-004",
+            "description": "システムはグリッド上のセル範囲に図形（矩形・円・三角形・矢印など）を配置できること。図形の色・枠線を設定できること。",
+            "source": "STK_001",
+            "acceptance": "基本図形（5種類以上）をドラッグ＆ドロップでグリッドに配置できる。図形の色・枠線が設定できる。",
+            "priority": "Must",
+            "title": "グリッドエディター（図形・シルエット）",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-005",
+            "description": "システムはローカルの画像ファイル（PNG・JPG・SVG）をグリッド上に配置し、他の要素と重ね合わせて合成できること。不透明度を調整できること。",
+            "source": "STK_001",
+            "acceptance": "画像ファイルを読み込んでグリッド上に配置できる。不透明度0～100%を設定できる。",
+            "priority": "Must",
+            "title": "画像レイヤー合成",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-006",
+            "description": "システムはセル・図形・テキストに対して単色・線形グラデーション・放射グラデーションを適用できること。",
+            "source": "STK_001",
+            "acceptance": "カラーピッカーで任意の色を選択できる。線形・放射グラデーションのプレビューが表示される。",
+            "priority": "Should",
+            "title": "色・グラデーション設定",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-007",
+            "description": "システムは編集中の謎解き画像をPNG形式でローカルにエクスポートできること。解像度（72/96/150/300 dpi）を選択できること。",
+            "source": "STK_001",
+            "acceptance": "「PNG保存」でファイル保存ダイアログが開き、指定パスにPNGが出力される。出力解像度が選択した値と一致する。",
+            "priority": "Must",
+            "title": "PNG出力",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-008",
+            "description": "システムは編集中の謎解き画像をSVG形式でローカルにエクスポートできること。テキスト要素は文字として出力すること。",
+            "source": "STK_001",
+            "acceptance": "「SVG保存」でSVGファイルが出力される。テキスト要素がSVG上で選択・コピーできる。",
+            "priority": "Must",
+            "title": "SVG出力",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-009",
+            "description": "システムは制作者が作成したテンプレートをローカルファイルとして保存し、後で読み込んで再利用できること。",
+            "source": "STK_001",
+            "acceptance": "「テンプレートとして保存」でJSONファイルが出力される。保存したJSONを読み込んでエディターが正しく復元される。",
+            "priority": "Must",
+            "title": "テンプレートの保存と再利用",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-010",
+            "description": "システムはグリッド上の謎解き画像を任意のセル範囲に分割して複数の画像ファイルとして出力できること。",
+            "source": "STK_001",
+            "acceptance": "分割範囲を指定して「分割出力」すると、連番ファイル名で複数の画像が出力される。",
+            "priority": "Should",
+            "title": "画像分割・スライス出力",
+            "status": "Draft"
+          }
+        ]
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "2.0",
+      "summary": "CHG_001〜CHG_008対応により要件更新",
+      "snapshot": {
+        "version": "2.0",
+        "requirements": [
+          {
+            "id": "SWR-001",
+            "title": "プロジェクト保存・読み込み",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-002",
+            "title": "グリッド設定",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-003",
+            "title": "グリッドエディター（文字・数字）",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-004",
+            "title": "グリッドエディター（図形・シルエット）",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-005",
+            "title": "画像レイヤー合成",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-006",
+            "title": "色・グラデーション設定",
+            "priority": "Should",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-007",
+            "title": "PNG出力",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-008",
+            "title": "SVG出力",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-009",
+            "title": "プロジェクトの保存と再利用",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-010",
+            "title": "画像分割・スライス出力",
+            "priority": "Should",
+            "status": "Draft"
+          },
+          {
+            "id": "SWR-011",
+            "title": "グリッド線表示ON/OFF",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-012",
+            "title": "キャンバスクリックによる配置セル自動選択",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-013",
+            "title": "キャンバスの縦横サイズ独立設定",
+            "priority": "Must",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-014",
+            "title": "レイヤー管理",
+            "priority": "Should",
+            "status": "Agreed"
+          },
+          {
+            "id": "SWR-015",
+            "title": "迷路モード",
+            "priority": "Should",
+            "status": "Agreed"
+          }
+        ]
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}

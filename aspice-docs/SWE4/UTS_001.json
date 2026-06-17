@@ -1,0 +1,371 @@
+{
+  "id": "UTS_001",
+  "type": "UTS",
+  "version": "1.0",
+  "process": "SWE4",
+  "upstream": [
+    "SDD_001"
+  ],
+  "created": "2026-06-12",
+  "content": {
+    "framework": "Vitest + jsdom（fabric.js はモック）",
+    "method": "ホワイトボックス（内部構造を考慮）",
+    "version": "1.0",
+    "approver": "",
+    "testcases": [
+      {
+        "expected": "戻り値として fabric.IText オブジェクトが返る。canvas.getObjects() の長さが 1 増加する。undoスタックに1件積まれる。",
+        "id": "TC-UNT-001",
+        "precondition": "gridCanvas が初期化済みであること",
+        "source": "SWR-003",
+        "priority": "High",
+        "target": "gridCanvas.js",
+        "input": "addElement('text', {row:0,col:0}, {text:'A', fontFamily:'sans-serif', fontSize:24, fill:'#000'})",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "TypeError が throw される。canvas のオブジェクト数は変化しない。",
+        "id": "TC-UNT-002",
+        "precondition": "gridCanvas が初期化済みであること",
+        "source": "SWR-003",
+        "priority": "High",
+        "target": "gridCanvas.js",
+        "input": "addElement('unknown', {row:0,col:0}, {})",
+        "perspective": "異常系"
+      },
+      {
+        "expected": "戻り値が JSON 文字列であること。JSON.parse が成功し、objects 配列の長さが 3 であること。",
+        "id": "TC-UNT-003",
+        "precondition": "gridCanvas に要素が3件追加されていること",
+        "source": "SWR-009",
+        "priority": "High",
+        "target": "gridCanvas.js",
+        "input": "getSnapshot()",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "現在の状態が1つ前の状態に2段階戻る。redo スタックに2件積まれる。",
+        "id": "TC-UNT-004",
+        "precondition": "3回の操作が記録されていること",
+        "source": "SWR-003",
+        "priority": "High",
+        "target": "editorUndoManager.js",
+        "input": "undo() を2回呼ぶ",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "何も起きない（例外を throw しない）。canUndo が false を返す。",
+        "id": "TC-UNT-005",
+        "precondition": "undoスタックが空の状態",
+        "source": "SWR-003",
+        "priority": "Medium",
+        "target": "editorUndoManager.js",
+        "input": "undo()",
+        "perspective": "境界値"
+      },
+      {
+        "expected": "TemplateDefinition オブジェクトが返る。id='builtin:word-grid'、schemaVersion が存在する。defaultGrid が設定されている。",
+        "id": "TC-UNT-006",
+        "precondition": "なし",
+        "source": "SWR-001",
+        "priority": "High",
+        "target": "templateLoader.js",
+        "input": "loadTemplate('builtin:word-grid')",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "TemplateNotFoundError が throw される。",
+        "id": "TC-UNT-007",
+        "precondition": "なし",
+        "source": "SWR-001",
+        "priority": "High",
+        "target": "templateLoader.js",
+        "input": "loadTemplate('builtin:nonexistent')",
+        "perspective": "異常系"
+      },
+      {
+        "expected": "Promise が resolve され、Blob が返る。Blob の type が 'image/png' であること。",
+        "id": "TC-UNT-008",
+        "precondition": "canvas に要素が1件以上存在すること",
+        "source": "SWR-007",
+        "priority": "High",
+        "target": "pngExporter.js",
+        "input": "exportPng(canvas, 300)",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "空の PNG Blob が返る（エラーにならない）。",
+        "id": "TC-UNT-009",
+        "precondition": "canvas が空であること（オブジェクト0件）",
+        "source": "SWR-007",
+        "priority": "Medium",
+        "target": "pngExporter.js",
+        "input": "exportPng(canvas, 96)",
+        "perspective": "境界値"
+      },
+      {
+        "expected": "配列が返る。length が 5 以上であること。各要素が name フィールドを持つこと。",
+        "id": "TC-UNT-010",
+        "precondition": "なし",
+        "source": "SWR-004",
+        "priority": "Medium",
+        "target": "elementCatalog.js",
+        "input": "getElements('shape')",
+        "perspective": "正常系"
+      }
+    ],
+    "author": "謎制作者",
+    "coverageGoal": "命令カバレッジ 90% 以上、分岐カバレッジ 80% 以上",
+    "scope": "gridCanvas.js",
+    "mockPolicy": "fabric.Canvas と fabric オブジェクトはスタブに差し替える。IPC通信は不要（RendererProcess内完結ユニットのため）。",
+    "status": "Draft",
+    "title": "謎解き用画像生成アプリ ユニットテスト仕様書"
+  },
+  "status": "Draft",
+  "downstream": [
+    "UTR_001",
+    "ITS_001"
+  ],
+  "title": "謎解き用画像生成アプリ ユニットテスト仕様書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "framework": "Vitest + jsdom（fabric.js はモック）",
+        "method": "ホワイトボックス（内部構造を考慮）",
+        "version": "1.0",
+        "approver": "",
+        "testcases": [
+          {
+            "expected": "戻り値として fabric.IText オブジェクトが返る。canvas.getObjects() の長さが 1 増加する。undoスタックに1件積まれる。",
+            "id": "TC-UNT-001",
+            "precondition": "gridCanvas が初期化済みであること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "gridCanvas.js",
+            "input": "addElement('text', {row:0,col:0}, {text:'A', fontFamily:'sans-serif', fontSize:24, fill:'#000'})",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "TypeError が throw される。canvas のオブジェクト数は変化しない。",
+            "id": "TC-UNT-002",
+            "precondition": "gridCanvas が初期化済みであること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "gridCanvas.js",
+            "input": "addElement('unknown', {row:0,col:0}, {})",
+            "perspective": "異常系"
+          },
+          {
+            "expected": "戻り値が JSON 文字列であること。JSON.parse が成功し、objects 配列の長さが 3 であること。",
+            "id": "TC-UNT-003",
+            "precondition": "gridCanvas に要素が3件追加されていること",
+            "source": "SWR-009",
+            "priority": "High",
+            "target": "gridCanvas.js",
+            "input": "getSnapshot()",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "現在の状態が1つ前の状態に2段階戻る。redo スタックに2件積まれる。",
+            "id": "TC-UNT-004",
+            "precondition": "3回の操作が記録されていること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "editorUndoManager.js",
+            "input": "undo() を2回呼ぶ",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "何も起きない（例外を throw しない）。canUndo が false を返す。",
+            "id": "TC-UNT-005",
+            "precondition": "undoスタックが空の状態",
+            "source": "SWR-003",
+            "priority": "Medium",
+            "target": "editorUndoManager.js",
+            "input": "undo()",
+            "perspective": "境界値"
+          },
+          {
+            "expected": "TemplateDefinition オブジェクトが返る。id='builtin:word-grid'、schemaVersion が存在する。defaultGrid が設定されている。",
+            "id": "TC-UNT-006",
+            "precondition": "なし",
+            "source": "SWR-001",
+            "priority": "High",
+            "target": "templateLoader.js",
+            "input": "loadTemplate('builtin:word-grid')",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "TemplateNotFoundError が throw される。",
+            "id": "TC-UNT-007",
+            "precondition": "なし",
+            "source": "SWR-001",
+            "priority": "High",
+            "target": "templateLoader.js",
+            "input": "loadTemplate('builtin:nonexistent')",
+            "perspective": "異常系"
+          },
+          {
+            "expected": "Promise が resolve され、Blob が返る。Blob の type が 'image/png' であること。",
+            "id": "TC-UNT-008",
+            "precondition": "canvas に要素が1件以上存在すること",
+            "source": "SWR-007",
+            "priority": "High",
+            "target": "pngExporter.js",
+            "input": "exportPng(canvas, 300)",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "空の PNG Blob が返る（エラーにならない）。",
+            "id": "TC-UNT-009",
+            "precondition": "canvas が空であること（オブジェクト0件）",
+            "source": "SWR-007",
+            "priority": "Medium",
+            "target": "pngExporter.js",
+            "input": "exportPng(canvas, 96)",
+            "perspective": "境界値"
+          },
+          {
+            "expected": "配列が返る。length が 5 以上であること。各要素が name フィールドを持つこと。",
+            "id": "TC-UNT-010",
+            "precondition": "なし",
+            "source": "SWR-004",
+            "priority": "Medium",
+            "target": "elementCatalog.js",
+            "input": "getElements('shape')",
+            "perspective": "正常系"
+          }
+        ],
+        "author": "謎制作者",
+        "coverageGoal": "命令カバレッジ 90% 以上、分岐カバレッジ 80% 以上",
+        "scope": "gridCanvas.js",
+        "mockPolicy": "fabric.Canvas と fabric オブジェクトはスタブに差し替える。IPC通信は不要（RendererProcess内完結ユニットのため）。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ ユニットテスト仕様書"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "framework": "Vitest + jsdom（fabric.js はモック）",
+        "method": "ホワイトボックス（内部構造を考慮）",
+        "version": "1.0",
+        "approver": "",
+        "testcases": [
+          {
+            "expected": "戻り値として fabric.IText オブジェクトが返る。canvas.getObjects() の長さが 1 増加する。undoスタックに1件積まれる。",
+            "id": "TC-UNT-001",
+            "precondition": "gridCanvas が初期化済みであること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "gridCanvas.js",
+            "input": "addElement('text', {row:0,col:0}, {text:'A', fontFamily:'sans-serif', fontSize:24, fill:'#000'})",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "TypeError が throw される。canvas のオブジェクト数は変化しない。",
+            "id": "TC-UNT-002",
+            "precondition": "gridCanvas が初期化済みであること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "gridCanvas.js",
+            "input": "addElement('unknown', {row:0,col:0}, {})",
+            "perspective": "異常系"
+          },
+          {
+            "expected": "戻り値が JSON 文字列であること。JSON.parse が成功し、objects 配列の長さが 3 であること。",
+            "id": "TC-UNT-003",
+            "precondition": "gridCanvas に要素が3件追加されていること",
+            "source": "SWR-009",
+            "priority": "High",
+            "target": "gridCanvas.js",
+            "input": "getSnapshot()",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "現在の状態が1つ前の状態に2段階戻る。redo スタックに2件積まれる。",
+            "id": "TC-UNT-004",
+            "precondition": "3回の操作が記録されていること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "editorUndoManager.js",
+            "input": "undo() を2回呼ぶ",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "何も起きない（例外を throw しない）。canUndo が false を返す。",
+            "id": "TC-UNT-005",
+            "precondition": "undoスタックが空の状態",
+            "source": "SWR-003",
+            "priority": "Medium",
+            "target": "editorUndoManager.js",
+            "input": "undo()",
+            "perspective": "境界値"
+          },
+          {
+            "expected": "TemplateDefinition オブジェクトが返る。id='builtin:word-grid'、schemaVersion が存在する。defaultGrid が設定されている。",
+            "id": "TC-UNT-006",
+            "precondition": "なし",
+            "source": "SWR-001",
+            "priority": "High",
+            "target": "templateLoader.js",
+            "input": "loadTemplate('builtin:word-grid')",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "TemplateNotFoundError が throw される。",
+            "id": "TC-UNT-007",
+            "precondition": "なし",
+            "source": "SWR-001",
+            "priority": "High",
+            "target": "templateLoader.js",
+            "input": "loadTemplate('builtin:nonexistent')",
+            "perspective": "異常系"
+          },
+          {
+            "expected": "Promise が resolve され、Blob が返る。Blob の type が 'image/png' であること。",
+            "id": "TC-UNT-008",
+            "precondition": "canvas に要素が1件以上存在すること",
+            "source": "SWR-007",
+            "priority": "High",
+            "target": "pngExporter.js",
+            "input": "exportPng(canvas, 300)",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "空の PNG Blob が返る（エラーにならない）。",
+            "id": "TC-UNT-009",
+            "precondition": "canvas が空であること（オブジェクト0件）",
+            "source": "SWR-007",
+            "priority": "Medium",
+            "target": "pngExporter.js",
+            "input": "exportPng(canvas, 96)",
+            "perspective": "境界値"
+          },
+          {
+            "expected": "配列が返る。length が 5 以上であること。各要素が name フィールドを持つこと。",
+            "id": "TC-UNT-010",
+            "precondition": "なし",
+            "source": "SWR-004",
+            "priority": "Medium",
+            "target": "elementCatalog.js",
+            "input": "getElements('shape')",
+            "perspective": "正常系"
+          }
+        ],
+        "author": "謎制作者",
+        "coverageGoal": "命令カバレッジ 90% 以上、分岐カバレッジ 80% 以上",
+        "scope": "gridCanvas.js",
+        "mockPolicy": "fabric.Canvas と fabric オブジェクトはスタブに差し替える。IPC通信は不要（RendererProcess内完結ユニットのため）。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ ユニットテスト仕様書"
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}

@@ -1,0 +1,580 @@
+{
+  "id": "SAD_001",
+  "type": "SAD",
+  "version": "1.0",
+  "process": "SWE2",
+  "upstream": [
+    "SRS_003"
+  ],
+  "created": "2026-06-12",
+  "content": {
+    "interfaces": [
+      {
+        "id": "IFC-001",
+        "args": "引数: filePath: string, data: Buffer | string\n戻り値: Promise<{ success: boolean, error?: string }>",
+        "provider": "MainProcess",
+        "consumer": "RendererProcess",
+        "frequency": "ユーザーの保存操作時（イベント駆動）",
+        "operation": "ipc:saveFile",
+        "error": "書き込み失敗時はsuccessをfalseで返す。RendererProcess側でエラーダイアログを表示する。"
+      },
+      {
+        "id": "IFC-002",
+        "args": "引数: options: OpenDialogOptions\n戻り値: Promise<{ filePaths: string[] }>",
+        "provider": "MainProcess",
+        "consumer": "RendererProcess",
+        "frequency": "ファイル選択ダイアログが必要な操作時（イベント駆動）",
+        "operation": "ipc:openFileDialog",
+        "error": "キャンセル時はfilePathsに空配列を返す。"
+      },
+      {
+        "id": "IFC-003",
+        "args": "引数: format: 'png' | 'svg', options: ExportOptions\n戻り値: Promise<Blob>",
+        "provider": "GridEditorModule",
+        "consumer": "RendererProcess",
+        "frequency": "エクスポート操作時（イベント駆動）",
+        "operation": "getCanvasSnapshot()",
+        "error": "キャンバスが空の場合はエラーをthrowする。"
+      },
+      {
+        "id": "IFC-004",
+        "args": "引数: id: string（組み込みテンプレートIDまたはJSONファイルパス）\n戻り値: TemplateDefinition",
+        "provider": "TemplateEngine",
+        "consumer": "RendererProcess",
+        "frequency": "テンプレート選択時（イベント駆動）",
+        "operation": "loadTemplate(id: string)",
+        "error": "テンプレートが見つからない場合はTemplateNotFoundErrorをthrowする。"
+      },
+      {
+        "id": "IFC-005",
+        "args": "引数: category: 'font' | 'shape' | 'icon'\n戻り値: ElementDefinition[]",
+        "provider": "ElementLibrary",
+        "consumer": "GridEditorModule",
+        "frequency": "ツールパネル描画時・要素配置時（イベント駆動）",
+        "operation": "getElements(category: ElementCategory)",
+        "error": "カテゴリが存在しない場合は空配列を返す。"
+      }
+    ],
+    "pattern": "レイヤードアーキテクチャ（OS層 / Electronプロセス層 / ビジネスロジック層 / UIコンポーネント層）",
+    "version": "1.0",
+    "approver": "",
+    "adr": [
+      {
+        "id": "ADR-001",
+        "status": "Accepted",
+        "rationale": "セキュリティリスクの低減。RendererProcess内のXSSがファイルシステムに直接アクセスできなくなる。将来的なWebContent切り替え時の影響範囲を最小化できる。",
+        "decision": "ファイル操作はすべてMainProcessに集約し、contextBridgeとipcMain/ipcRendererを使ってRendererProcessと通信する。RendererProcessにNode.jsの直接アクセスは許可しない（nodeIntegration: false）。",
+        "context": "Electronアプリでは、ファイルI/OをレンダラープロセスでそのままNode.jsとして実行することもできる。しかし、セキュリティと保守性の観点から役割を分離する必要がある。",
+        "title": "ElectronのIPC通信でメインプロセスとレンダラープロセスを分離する",
+        "alternatives": "nodeIntegration: trueでRendererProcess内からfsを直接呼ぶ案：実装は簡単だが、セキュリティ上問題があり採用しない。"
+      },
+      {
+        "id": "ADR-002",
+        "status": "Accepted",
+        "rationale": "オブジェクトベースのCanvas操作、JSON/SVGの相互変換、Electron環境での動作実績がある。MIT License。",
+        "decision": "fabric.js（v6系）を採用する。Canvasオブジェクトの選択・移動・グループ化・JSON serialize/deserializeの機能が標準提供されており、要件に合致する。",
+        "context": "グリッドエディターはテキスト・図形・画像の複合レイヤーを扱う。ブラウザネイティブのCanvas APIのみで実装すると、オブジェクト選択・ドラッグ移動・undo/redoの実装コストが非常に高くなる。",
+        "title": "Canvas描画ライブラリにfabric.jsを採用する",
+        "alternatives": "Konva.js：同様の機能を持つが、SVG出力が非公式。Pixi.js：2Dゲーム向けでCanvas操作APIが低レベルすぎる。"
+      },
+      {
+        "id": "ADR-003",
+        "status": "Accepted",
+        "rationale": "人間が読みやすく、gitなどのバージョン管理ツールでdiffが取れる。fabric.jsが標準でJSON serialize/deserializeに対応している。",
+        "decision": "テンプレートはJSONファイルとして保存する。スキーマバージョンフィールド（schemaVersion）を必須とし、後方互換性を保証する。",
+        "context": "テンプレートはグリッドサイズ・セルスタイル・配置要素の定義を含む構造化データ。バージョン管理・差分確認・将来的な共有を考慮した形式が必要。",
+        "title": "テンプレートの保存形式をJSONとする",
+        "alternatives": "バイナリ形式：読み取り不可で却下。SVG形式：構造データとスタイルが混在し管理が複雑になるため却下。"
+      }
+    ],
+    "author": "謎制作者",
+    "components": [
+      {
+        "id": "ARC-001",
+        "name": "MainProcess",
+        "constraints": "ファイルI/Oはすべて本コンポーネントに集約する。RendererProcessから直接fsを呼ぶことを禁止する。",
+        "dependencies": "",
+        "responsibility": "Electronメインプロセス。ファイルの読み書き（template/export）、ネイティブダイアログ（保存先選択）、ウィンドウのライフサイクル管理を担う。RendererProcessからのIPC要求を受け付け、fs操作を実行して結果を返す。",
+        "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+      },
+      {
+        "id": "ARC-002",
+        "name": "RendererProcess",
+        "constraints": "UI描画はすべてRendererProcess内で完結させる。",
+        "dependencies": "ARC-003, ARC-004, ARC-005, ARC-006",
+        "responsibility": "ElectronレンダラープロセスのUI全体制御。ユーザー操作を受け取り、GridEditorModule・TemplateEngine・ExportModuleを統括する。各モジュールの初期化順序と状態管理を担う。",
+        "relatedSWR": "SWR-001, SWR-002, SWR-003, SWR-004, SWR-005, SWR-006"
+      },
+      {
+        "id": "ARC-003",
+        "name": "GridEditorModule",
+        "constraints": "グリッドサイズは最大100×100セルをサポートすること。",
+        "dependencies": "ARC-006",
+        "responsibility": "グリッドベースの要素配置・編集操作を担うコアエディター。Canvas APIまたはfabric.jsを用いてグリッド・セル・テキスト・図形・画像レイヤーを描画・編集する。undo/redo履歴を管理する。",
+        "relatedSWR": "SWR-003, SWR-004, SWR-005, SWR-006"
+      },
+      {
+        "id": "ARC-004",
+        "name": "TemplateEngine",
+        "constraints": "テンプレートはJSONスキーマ v1.0 に準拠すること。後方互換性を維持するためバージョンフィールドを必須とする。",
+        "dependencies": "",
+        "responsibility": "ひな型テンプレートの管理・読み込み・保存を担う。組み込みひな型（文字グリッド・数字暗号・図形配置・クロスワード・迷路）を提供し、カスタムテンプレートのJSON保存・読み込みを実装する。",
+        "relatedSWR": "SWR-001, SWR-002, SWR-009"
+      },
+      {
+        "id": "ARC-005",
+        "name": "ExportModule",
+        "constraints": "PNG出力は1920×1080px・300dpiで10秒以内に完了すること（SWR-N01）。",
+        "dependencies": "ARC-003",
+        "responsibility": "GridEditorModuleの描画内容をPNG・SVG形式でエクスポートする。PNG出力では解像度（dpi）の指定、SVG出力ではテキスト要素の文字保持を保証する。画像分割スライス出力も提供する。",
+        "relatedSWR": "SWR-007, SWR-008, SWR-010"
+      },
+      {
+        "id": "ARC-006",
+        "name": "ElementLibrary",
+        "constraints": "組み込みフォントは最低5種類、基本図形は最低5種類を同梱すること（SWR-004受入基準）。",
+        "dependencies": "",
+        "responsibility": "フォント一覧・基本図形プリセット・アイコンセットを管理するライブラリ。GridEditorModuleが要素を配置する際の素材ソースとして機能する。JSONファイルとして定義し、ユーザーが追加可能。",
+        "relatedSWR": "SWR-003, SWR-004"
+      }
+    ],
+    "status": "Draft",
+    "title": "謎解き用画像生成アプリ ソフトウェアアーキテクチャ設計書",
+    "policy": "単一責任原則に基づきコンポーネントを分割する。ElectronのメインプロセスとレンダラープロセスをIPCで明確に分離し、ファイルI/OはMainProcessに集約する。UIロジックはRendererProcess内のモジュールに分割し、グリッド編集・テンプレート管理・エクスポートをそれぞれ独立したモジュールとして実装する。",
+    "contextDiagram": "graph LR\n    User[\"謎制作者\"]\n    App[\"謎解き画像生成アプリ\"]\n    FS[(\"ローカルFS\")]\n    PNG[\"PNGファイル\"]\n    SVG[\"SVGファイル\"]\n    Tmpl[\"テンプレートJSON\"]\n    Tools[\"配信ツール\"]\n\n    User -->|操作| App\n    App -->|読み込み| Tmpl\n    App -->|出力| PNG\n    App -->|出力| SVG\n    Tmpl --- FS\n    PNG --- FS\n    SVG --- FS\n    PNG -->|共有| Tools\n    SVG -->|共有| Tools",
+    "componentDiagram": "graph TD\n    User[\"謎制作者\"]\n\n    subgraph Electron[\"Electronアプリ\"]\n        subgraph Main[\"MainProcess\"]\n            MP[\"MainProcess\"]\n        end\n        subgraph Renderer[\"RendererProcess\"]\n            RP[\"RendererProcess\"]\n            GE[\"GridEditorModule\"]\n            TE[\"TemplateEngine\"]\n            EX[\"ExportModule\"]\n            EL[\"ElementLibrary\"]\n        end\n    end\n\n    FS[(\"ローカルFS\")]\n\n    User -->|操作| RP\n    RP -->|IPC| MP\n    MP -->|IPC| RP\n    RP --> GE\n    RP --> TE\n    RP --> EX\n    GE --> EL\n    EX --> GE\n    MP --> FS"
+  },
+  "status": "Draft",
+  "downstream": [
+    "SDD_001"
+  ],
+  "title": "謎解き用画像生成アプリ ソフトウェアアーキテクチャ設計書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "contextDiagram": "[謎制作者]\n    |  操作\n    v\n[RendererProcess (UI)]\n    |  IPC (ipcRenderer)\n    v\n[MainProcess]\n    |  fs / dialog API\n    v\n[ローカルファイルシステム]\n  ├── templates/    (テンプレートJSON)\n  └── exports/      (PNG / SVG 出力先)",
+        "interfaces": [
+          {
+            "id": "IFC-001",
+            "args": "引数: filePath: string, data: Buffer | string\n戻り値: Promise<{ success: boolean, error?: string }>",
+            "provider": "MainProcess",
+            "consumer": "RendererProcess",
+            "frequency": "ユーザーの保存操作時（イベント駆動）",
+            "operation": "ipc:saveFile",
+            "error": "書き込み失敗時はsuccessをfalseで返す。RendererProcess側でエラーダイアログを表示する。"
+          },
+          {
+            "id": "IFC-002",
+            "args": "引数: options: OpenDialogOptions\n戻り値: Promise<{ filePaths: string[] }>",
+            "provider": "MainProcess",
+            "consumer": "RendererProcess",
+            "frequency": "ファイル選択ダイアログが必要な操作時（イベント駆動）",
+            "operation": "ipc:openFileDialog",
+            "error": "キャンセル時はfilePathsに空配列を返す。"
+          },
+          {
+            "id": "IFC-003",
+            "args": "引数: format: 'png' | 'svg', options: ExportOptions\n戻り値: Promise<Blob>",
+            "provider": "GridEditorModule",
+            "consumer": "RendererProcess",
+            "frequency": "エクスポート操作時（イベント駆動）",
+            "operation": "getCanvasSnapshot()",
+            "error": "キャンバスが空の場合はエラーをthrowする。"
+          },
+          {
+            "id": "IFC-004",
+            "args": "引数: id: string（組み込みテンプレートIDまたはJSONファイルパス）\n戻り値: TemplateDefinition",
+            "provider": "TemplateEngine",
+            "consumer": "RendererProcess",
+            "frequency": "テンプレート選択時（イベント駆動）",
+            "operation": "loadTemplate(id: string)",
+            "error": "テンプレートが見つからない場合はTemplateNotFoundErrorをthrowする。"
+          },
+          {
+            "id": "IFC-005",
+            "args": "引数: category: 'font' | 'shape' | 'icon'\n戻り値: ElementDefinition[]",
+            "provider": "ElementLibrary",
+            "consumer": "GridEditorModule",
+            "frequency": "ツールパネル描画時・要素配置時（イベント駆動）",
+            "operation": "getElements(category: ElementCategory)",
+            "error": "カテゴリが存在しない場合は空配列を返す。"
+          }
+        ],
+        "pattern": "レイヤードアーキテクチャ（OS層 / Electronプロセス層 / ビジネスロジック層 / UIコンポーネント層）",
+        "version": "1.0",
+        "approver": "",
+        "adr": [
+          {
+            "id": "ADR-001",
+            "status": "Accepted",
+            "rationale": "セキュリティリスクの低減。RendererProcess内のXSSがファイルシステムに直接アクセスできなくなる。将来的なWebContent切り替え時の影響範囲を最小化できる。",
+            "decision": "ファイル操作はすべてMainProcessに集約し、contextBridgeとipcMain/ipcRendererを使ってRendererProcessと通信する。RendererProcessにNode.jsの直接アクセスは許可しない（nodeIntegration: false）。",
+            "context": "Electronアプリでは、ファイルI/OをレンダラープロセスでそのままNode.jsとして実行することもできる。しかし、セキュリティと保守性の観点から役割を分離する必要がある。",
+            "title": "ElectronのIPC通信でメインプロセスとレンダラープロセスを分離する",
+            "alternatives": "nodeIntegration: trueでRendererProcess内からfsを直接呼ぶ案：実装は簡単だが、セキュリティ上問題があり採用しない。"
+          },
+          {
+            "id": "ADR-002",
+            "status": "Accepted",
+            "rationale": "オブジェクトベースのCanvas操作、JSON/SVGの相互変換、Electron環境での動作実績がある。MIT License。",
+            "decision": "fabric.js（v6系）を採用する。Canvasオブジェクトの選択・移動・グループ化・JSON serialize/deserializeの機能が標準提供されており、要件に合致する。",
+            "context": "グリッドエディターはテキスト・図形・画像の複合レイヤーを扱う。ブラウザネイティブのCanvas APIのみで実装すると、オブジェクト選択・ドラッグ移動・undo/redoの実装コストが非常に高くなる。",
+            "title": "Canvas描画ライブラリにfabric.jsを採用する",
+            "alternatives": "Konva.js：同様の機能を持つが、SVG出力が非公式。Pixi.js：2Dゲーム向けでCanvas操作APIが低レベルすぎる。"
+          },
+          {
+            "id": "ADR-003",
+            "status": "Accepted",
+            "rationale": "人間が読みやすく、gitなどのバージョン管理ツールでdiffが取れる。fabric.jsが標準でJSON serialize/deserializeに対応している。",
+            "decision": "テンプレートはJSONファイルとして保存する。スキーマバージョンフィールド（schemaVersion）を必須とし、後方互換性を保証する。",
+            "context": "テンプレートはグリッドサイズ・セルスタイル・配置要素の定義を含む構造化データ。バージョン管理・差分確認・将来的な共有を考慮した形式が必要。",
+            "title": "テンプレートの保存形式をJSONとする",
+            "alternatives": "バイナリ形式：読み取り不可で却下。SVG形式：構造データとスタイルが混在し管理が複雑になるため却下。"
+          }
+        ],
+        "author": "謎制作者",
+        "components": [
+          {
+            "id": "ARC-001",
+            "name": "MainProcess",
+            "constraints": "ファイルI/Oはすべて本コンポーネントに集約する。RendererProcessから直接fsを呼ぶことを禁止する。",
+            "dependencies": "",
+            "responsibility": "Electronメインプロセス。ファイルの読み書き（template/export）、ネイティブダイアログ（保存先選択）、ウィンドウのライフサイクル管理を担う。RendererProcessからのIPC要求を受け付け、fs操作を実行して結果を返す。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+          },
+          {
+            "id": "ARC-002",
+            "name": "RendererProcess",
+            "constraints": "UI描画はすべてRendererProcess内で完結させる。",
+            "dependencies": "ARC-003, ARC-004, ARC-005, ARC-006",
+            "responsibility": "ElectronレンダラープロセスのUI全体制御。ユーザー操作を受け取り、GridEditorModule・TemplateEngine・ExportModuleを統括する。各モジュールの初期化順序と状態管理を担う。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-003, SWR-004, SWR-005, SWR-006"
+          },
+          {
+            "id": "ARC-003",
+            "name": "GridEditorModule",
+            "constraints": "グリッドサイズは最大100×100セルをサポートすること。",
+            "dependencies": "ARC-006",
+            "responsibility": "グリッドベースの要素配置・編集操作を担うコアエディター。Canvas APIまたはfabric.jsを用いてグリッド・セル・テキスト・図形・画像レイヤーを描画・編集する。undo/redo履歴を管理する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005, SWR-006"
+          },
+          {
+            "id": "ARC-004",
+            "name": "TemplateEngine",
+            "constraints": "テンプレートはJSONスキーマ v1.0 に準拠すること。後方互換性を維持するためバージョンフィールドを必須とする。",
+            "dependencies": "",
+            "responsibility": "ひな型テンプレートの管理・読み込み・保存を担う。組み込みひな型（文字グリッド・数字暗号・図形配置・クロスワード・迷路）を提供し、カスタムテンプレートのJSON保存・読み込みを実装する。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-009"
+          },
+          {
+            "id": "ARC-005",
+            "name": "ExportModule",
+            "constraints": "PNG出力は1920×1080px・300dpiで10秒以内に完了すること（SWR-N01）。",
+            "dependencies": "ARC-003",
+            "responsibility": "GridEditorModuleの描画内容をPNG・SVG形式でエクスポートする。PNG出力では解像度（dpi）の指定、SVG出力ではテキスト要素の文字保持を保証する。画像分割スライス出力も提供する。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-010"
+          },
+          {
+            "id": "ARC-006",
+            "name": "ElementLibrary",
+            "constraints": "組み込みフォントは最低5種類、基本図形は最低5種類を同梱すること（SWR-004受入基準）。",
+            "dependencies": "",
+            "responsibility": "フォント一覧・基本図形プリセット・アイコンセットを管理するライブラリ。GridEditorModuleが要素を配置する際の素材ソースとして機能する。JSONファイルとして定義し、ユーザーが追加可能。",
+            "relatedSWR": "SWR-003, SWR-004"
+          }
+        ],
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ ソフトウェアアーキテクチャ設計書",
+        "policy": "単一責任原則に基づきコンポーネントを分割する。ElectronのメインプロセスとレンダラープロセスをIPCで明確に分離し、ファイルI/OはMainProcessに集約する。UIロジックはRendererProcess内のモジュールに分割し、グリッド編集・テンプレート管理・エクスポートをそれぞれ独立したモジュールとして実装する。"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "interfaces": [
+          {
+            "id": "IFC-001",
+            "args": "引数: filePath: string, data: Buffer | string\n戻り値: Promise<{ success: boolean, error?: string }>",
+            "provider": "MainProcess",
+            "consumer": "RendererProcess",
+            "frequency": "ユーザーの保存操作時（イベント駆動）",
+            "operation": "ipc:saveFile",
+            "error": "書き込み失敗時はsuccessをfalseで返す。RendererProcess側でエラーダイアログを表示する。"
+          },
+          {
+            "id": "IFC-002",
+            "args": "引数: options: OpenDialogOptions\n戻り値: Promise<{ filePaths: string[] }>",
+            "provider": "MainProcess",
+            "consumer": "RendererProcess",
+            "frequency": "ファイル選択ダイアログが必要な操作時（イベント駆動）",
+            "operation": "ipc:openFileDialog",
+            "error": "キャンセル時はfilePathsに空配列を返す。"
+          },
+          {
+            "id": "IFC-003",
+            "args": "引数: format: 'png' | 'svg', options: ExportOptions\n戻り値: Promise<Blob>",
+            "provider": "GridEditorModule",
+            "consumer": "RendererProcess",
+            "frequency": "エクスポート操作時（イベント駆動）",
+            "operation": "getCanvasSnapshot()",
+            "error": "キャンバスが空の場合はエラーをthrowする。"
+          },
+          {
+            "id": "IFC-004",
+            "args": "引数: id: string（組み込みテンプレートIDまたはJSONファイルパス）\n戻り値: TemplateDefinition",
+            "provider": "TemplateEngine",
+            "consumer": "RendererProcess",
+            "frequency": "テンプレート選択時（イベント駆動）",
+            "operation": "loadTemplate(id: string)",
+            "error": "テンプレートが見つからない場合はTemplateNotFoundErrorをthrowする。"
+          },
+          {
+            "id": "IFC-005",
+            "args": "引数: category: 'font' | 'shape' | 'icon'\n戻り値: ElementDefinition[]",
+            "provider": "ElementLibrary",
+            "consumer": "GridEditorModule",
+            "frequency": "ツールパネル描画時・要素配置時（イベント駆動）",
+            "operation": "getElements(category: ElementCategory)",
+            "error": "カテゴリが存在しない場合は空配列を返す。"
+          }
+        ],
+        "pattern": "レイヤードアーキテクチャ（OS層 / Electronプロセス層 / ビジネスロジック層 / UIコンポーネント層）",
+        "version": "1.0",
+        "approver": "",
+        "adr": [
+          {
+            "id": "ADR-001",
+            "status": "Accepted",
+            "rationale": "セキュリティリスクの低減。RendererProcess内のXSSがファイルシステムに直接アクセスできなくなる。将来的なWebContent切り替え時の影響範囲を最小化できる。",
+            "decision": "ファイル操作はすべてMainProcessに集約し、contextBridgeとipcMain/ipcRendererを使ってRendererProcessと通信する。RendererProcessにNode.jsの直接アクセスは許可しない（nodeIntegration: false）。",
+            "context": "Electronアプリでは、ファイルI/OをレンダラープロセスでそのままNode.jsとして実行することもできる。しかし、セキュリティと保守性の観点から役割を分離する必要がある。",
+            "title": "ElectronのIPC通信でメインプロセスとレンダラープロセスを分離する",
+            "alternatives": "nodeIntegration: trueでRendererProcess内からfsを直接呼ぶ案：実装は簡単だが、セキュリティ上問題があり採用しない。"
+          },
+          {
+            "id": "ADR-002",
+            "status": "Accepted",
+            "rationale": "オブジェクトベースのCanvas操作、JSON/SVGの相互変換、Electron環境での動作実績がある。MIT License。",
+            "decision": "fabric.js（v6系）を採用する。Canvasオブジェクトの選択・移動・グループ化・JSON serialize/deserializeの機能が標準提供されており、要件に合致する。",
+            "context": "グリッドエディターはテキスト・図形・画像の複合レイヤーを扱う。ブラウザネイティブのCanvas APIのみで実装すると、オブジェクト選択・ドラッグ移動・undo/redoの実装コストが非常に高くなる。",
+            "title": "Canvas描画ライブラリにfabric.jsを採用する",
+            "alternatives": "Konva.js：同様の機能を持つが、SVG出力が非公式。Pixi.js：2Dゲーム向けでCanvas操作APIが低レベルすぎる。"
+          },
+          {
+            "id": "ADR-003",
+            "status": "Accepted",
+            "rationale": "人間が読みやすく、gitなどのバージョン管理ツールでdiffが取れる。fabric.jsが標準でJSON serialize/deserializeに対応している。",
+            "decision": "テンプレートはJSONファイルとして保存する。スキーマバージョンフィールド（schemaVersion）を必須とし、後方互換性を保証する。",
+            "context": "テンプレートはグリッドサイズ・セルスタイル・配置要素の定義を含む構造化データ。バージョン管理・差分確認・将来的な共有を考慮した形式が必要。",
+            "title": "テンプレートの保存形式をJSONとする",
+            "alternatives": "バイナリ形式：読み取り不可で却下。SVG形式：構造データとスタイルが混在し管理が複雑になるため却下。"
+          }
+        ],
+        "author": "謎制作者",
+        "components": [
+          {
+            "id": "ARC-001",
+            "name": "MainProcess",
+            "constraints": "ファイルI/Oはすべて本コンポーネントに集約する。RendererProcessから直接fsを呼ぶことを禁止する。",
+            "dependencies": "",
+            "responsibility": "Electronメインプロセス。ファイルの読み書き（template/export）、ネイティブダイアログ（保存先選択）、ウィンドウのライフサイクル管理を担う。RendererProcessからのIPC要求を受け付け、fs操作を実行して結果を返す。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+          },
+          {
+            "id": "ARC-002",
+            "name": "RendererProcess",
+            "constraints": "UI描画はすべてRendererProcess内で完結させる。",
+            "dependencies": "ARC-003, ARC-004, ARC-005, ARC-006",
+            "responsibility": "ElectronレンダラープロセスのUI全体制御。ユーザー操作を受け取り、GridEditorModule・TemplateEngine・ExportModuleを統括する。各モジュールの初期化順序と状態管理を担う。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-003, SWR-004, SWR-005, SWR-006"
+          },
+          {
+            "id": "ARC-003",
+            "name": "GridEditorModule",
+            "constraints": "グリッドサイズは最大100×100セルをサポートすること。",
+            "dependencies": "ARC-006",
+            "responsibility": "グリッドベースの要素配置・編集操作を担うコアエディター。Canvas APIまたはfabric.jsを用いてグリッド・セル・テキスト・図形・画像レイヤーを描画・編集する。undo/redo履歴を管理する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005, SWR-006"
+          },
+          {
+            "id": "ARC-004",
+            "name": "TemplateEngine",
+            "constraints": "テンプレートはJSONスキーマ v1.0 に準拠すること。後方互換性を維持するためバージョンフィールドを必須とする。",
+            "dependencies": "",
+            "responsibility": "ひな型テンプレートの管理・読み込み・保存を担う。組み込みひな型（文字グリッド・数字暗号・図形配置・クロスワード・迷路）を提供し、カスタムテンプレートのJSON保存・読み込みを実装する。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-009"
+          },
+          {
+            "id": "ARC-005",
+            "name": "ExportModule",
+            "constraints": "PNG出力は1920×1080px・300dpiで10秒以内に完了すること（SWR-N01）。",
+            "dependencies": "ARC-003",
+            "responsibility": "GridEditorModuleの描画内容をPNG・SVG形式でエクスポートする。PNG出力では解像度（dpi）の指定、SVG出力ではテキスト要素の文字保持を保証する。画像分割スライス出力も提供する。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-010"
+          },
+          {
+            "id": "ARC-006",
+            "name": "ElementLibrary",
+            "constraints": "組み込みフォントは最低5種類、基本図形は最低5種類を同梱すること（SWR-004受入基準）。",
+            "dependencies": "",
+            "responsibility": "フォント一覧・基本図形プリセット・アイコンセットを管理するライブラリ。GridEditorModuleが要素を配置する際の素材ソースとして機能する。JSONファイルとして定義し、ユーザーが追加可能。",
+            "relatedSWR": "SWR-003, SWR-004"
+          }
+        ],
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ ソフトウェアアーキテクチャ設計書",
+        "policy": "単一責任原則に基づきコンポーネントを分割する。ElectronのメインプロセスとレンダラープロセスをIPCで明確に分離し、ファイルI/OはMainProcessに集約する。UIロジックはRendererProcess内のモジュールに分割し、グリッド編集・テンプレート管理・エクスポートをそれぞれ独立したモジュールとして実装する。",
+        "contextDiagram": "graph LR\n    User[\"👤 謎制作者\"]\n    App[\"謎解き画像生成アプリ\\n(Electron)\"]\n    FS[(\"ローカルFS\")]\n    PNG[\"PNGファイル\"]\n    SVG[\"SVGファイル\"]\n    Tmpl[\"テンプレートJSON\"]\n    Tools[\"配信ツール\\n(Discord/LINE/Notion等)\"]\n\n    User -->|操作| App\n    App -->|読み込み| Tmpl\n    App -->|出力| PNG\n    App -->|出力| SVG\n    Tmpl --- FS\n    PNG --- FS\n    SVG --- FS\n    PNG -->|貼付・共有| Tools\n    SVG -->|貼付・共有| Tools",
+        "componentDiagram": "graph TD\n    User[\"👤 謎制作者\"]\n\n    subgraph Electron[\"Electronアプリ\"]\n        subgraph Main[\"MainProcess (Node.js)\"]\n            MP[\"MainProcess\\nファイルI/O・ダイアログ\"]\n        end\n        subgraph Renderer[\"RendererProcess (Chromium)\"]\n            RP[\"RendererProcess\\nUI統括\"]\n            GE[\"GridEditorModule\\nグリッド編集\"]\n            TE[\"TemplateEngine\\nテンプレート管理\"]\n            EX[\"ExportModule\\nPNG/SVG出力\"]\n            EL[\"ElementLibrary\\n素材ライブラリ\"]\n        end\n    end\n\n    FS[(\"ローカルFS\")]\n\n    User -->|操作| RP\n    RP <-->|\"IPC (contextBridge)\"| MP\n    RP --> GE\n    RP --> TE\n    RP --> EX\n    GE --> EL\n    EX --> GE\n    MP --> FS"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "interfaces": [
+          {
+            "id": "IFC-001",
+            "args": "引数: filePath: string, data: Buffer | string\n戻り値: Promise<{ success: boolean, error?: string }>",
+            "provider": "MainProcess",
+            "consumer": "RendererProcess",
+            "frequency": "ユーザーの保存操作時（イベント駆動）",
+            "operation": "ipc:saveFile",
+            "error": "書き込み失敗時はsuccessをfalseで返す。RendererProcess側でエラーダイアログを表示する。"
+          },
+          {
+            "id": "IFC-002",
+            "args": "引数: options: OpenDialogOptions\n戻り値: Promise<{ filePaths: string[] }>",
+            "provider": "MainProcess",
+            "consumer": "RendererProcess",
+            "frequency": "ファイル選択ダイアログが必要な操作時（イベント駆動）",
+            "operation": "ipc:openFileDialog",
+            "error": "キャンセル時はfilePathsに空配列を返す。"
+          },
+          {
+            "id": "IFC-003",
+            "args": "引数: format: 'png' | 'svg', options: ExportOptions\n戻り値: Promise<Blob>",
+            "provider": "GridEditorModule",
+            "consumer": "RendererProcess",
+            "frequency": "エクスポート操作時（イベント駆動）",
+            "operation": "getCanvasSnapshot()",
+            "error": "キャンバスが空の場合はエラーをthrowする。"
+          },
+          {
+            "id": "IFC-004",
+            "args": "引数: id: string（組み込みテンプレートIDまたはJSONファイルパス）\n戻り値: TemplateDefinition",
+            "provider": "TemplateEngine",
+            "consumer": "RendererProcess",
+            "frequency": "テンプレート選択時（イベント駆動）",
+            "operation": "loadTemplate(id: string)",
+            "error": "テンプレートが見つからない場合はTemplateNotFoundErrorをthrowする。"
+          },
+          {
+            "id": "IFC-005",
+            "args": "引数: category: 'font' | 'shape' | 'icon'\n戻り値: ElementDefinition[]",
+            "provider": "ElementLibrary",
+            "consumer": "GridEditorModule",
+            "frequency": "ツールパネル描画時・要素配置時（イベント駆動）",
+            "operation": "getElements(category: ElementCategory)",
+            "error": "カテゴリが存在しない場合は空配列を返す。"
+          }
+        ],
+        "pattern": "レイヤードアーキテクチャ（OS層 / Electronプロセス層 / ビジネスロジック層 / UIコンポーネント層）",
+        "version": "1.0",
+        "approver": "",
+        "adr": [
+          {
+            "id": "ADR-001",
+            "status": "Accepted",
+            "rationale": "セキュリティリスクの低減。RendererProcess内のXSSがファイルシステムに直接アクセスできなくなる。将来的なWebContent切り替え時の影響範囲を最小化できる。",
+            "decision": "ファイル操作はすべてMainProcessに集約し、contextBridgeとipcMain/ipcRendererを使ってRendererProcessと通信する。RendererProcessにNode.jsの直接アクセスは許可しない（nodeIntegration: false）。",
+            "context": "Electronアプリでは、ファイルI/OをレンダラープロセスでそのままNode.jsとして実行することもできる。しかし、セキュリティと保守性の観点から役割を分離する必要がある。",
+            "title": "ElectronのIPC通信でメインプロセスとレンダラープロセスを分離する",
+            "alternatives": "nodeIntegration: trueでRendererProcess内からfsを直接呼ぶ案：実装は簡単だが、セキュリティ上問題があり採用しない。"
+          },
+          {
+            "id": "ADR-002",
+            "status": "Accepted",
+            "rationale": "オブジェクトベースのCanvas操作、JSON/SVGの相互変換、Electron環境での動作実績がある。MIT License。",
+            "decision": "fabric.js（v6系）を採用する。Canvasオブジェクトの選択・移動・グループ化・JSON serialize/deserializeの機能が標準提供されており、要件に合致する。",
+            "context": "グリッドエディターはテキスト・図形・画像の複合レイヤーを扱う。ブラウザネイティブのCanvas APIのみで実装すると、オブジェクト選択・ドラッグ移動・undo/redoの実装コストが非常に高くなる。",
+            "title": "Canvas描画ライブラリにfabric.jsを採用する",
+            "alternatives": "Konva.js：同様の機能を持つが、SVG出力が非公式。Pixi.js：2Dゲーム向けでCanvas操作APIが低レベルすぎる。"
+          },
+          {
+            "id": "ADR-003",
+            "status": "Accepted",
+            "rationale": "人間が読みやすく、gitなどのバージョン管理ツールでdiffが取れる。fabric.jsが標準でJSON serialize/deserializeに対応している。",
+            "decision": "テンプレートはJSONファイルとして保存する。スキーマバージョンフィールド（schemaVersion）を必須とし、後方互換性を保証する。",
+            "context": "テンプレートはグリッドサイズ・セルスタイル・配置要素の定義を含む構造化データ。バージョン管理・差分確認・将来的な共有を考慮した形式が必要。",
+            "title": "テンプレートの保存形式をJSONとする",
+            "alternatives": "バイナリ形式：読み取り不可で却下。SVG形式：構造データとスタイルが混在し管理が複雑になるため却下。"
+          }
+        ],
+        "author": "謎制作者",
+        "components": [
+          {
+            "id": "ARC-001",
+            "name": "MainProcess",
+            "constraints": "ファイルI/Oはすべて本コンポーネントに集約する。RendererProcessから直接fsを呼ぶことを禁止する。",
+            "dependencies": "",
+            "responsibility": "Electronメインプロセス。ファイルの読み書き（template/export）、ネイティブダイアログ（保存先選択）、ウィンドウのライフサイクル管理を担う。RendererProcessからのIPC要求を受け付け、fs操作を実行して結果を返す。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+          },
+          {
+            "id": "ARC-002",
+            "name": "RendererProcess",
+            "constraints": "UI描画はすべてRendererProcess内で完結させる。",
+            "dependencies": "ARC-003, ARC-004, ARC-005, ARC-006",
+            "responsibility": "ElectronレンダラープロセスのUI全体制御。ユーザー操作を受け取り、GridEditorModule・TemplateEngine・ExportModuleを統括する。各モジュールの初期化順序と状態管理を担う。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-003, SWR-004, SWR-005, SWR-006"
+          },
+          {
+            "id": "ARC-003",
+            "name": "GridEditorModule",
+            "constraints": "グリッドサイズは最大100×100セルをサポートすること。",
+            "dependencies": "ARC-006",
+            "responsibility": "グリッドベースの要素配置・編集操作を担うコアエディター。Canvas APIまたはfabric.jsを用いてグリッド・セル・テキスト・図形・画像レイヤーを描画・編集する。undo/redo履歴を管理する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005, SWR-006"
+          },
+          {
+            "id": "ARC-004",
+            "name": "TemplateEngine",
+            "constraints": "テンプレートはJSONスキーマ v1.0 に準拠すること。後方互換性を維持するためバージョンフィールドを必須とする。",
+            "dependencies": "",
+            "responsibility": "ひな型テンプレートの管理・読み込み・保存を担う。組み込みひな型（文字グリッド・数字暗号・図形配置・クロスワード・迷路）を提供し、カスタムテンプレートのJSON保存・読み込みを実装する。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-009"
+          },
+          {
+            "id": "ARC-005",
+            "name": "ExportModule",
+            "constraints": "PNG出力は1920×1080px・300dpiで10秒以内に完了すること（SWR-N01）。",
+            "dependencies": "ARC-003",
+            "responsibility": "GridEditorModuleの描画内容をPNG・SVG形式でエクスポートする。PNG出力では解像度（dpi）の指定、SVG出力ではテキスト要素の文字保持を保証する。画像分割スライス出力も提供する。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-010"
+          },
+          {
+            "id": "ARC-006",
+            "name": "ElementLibrary",
+            "constraints": "組み込みフォントは最低5種類、基本図形は最低5種類を同梱すること（SWR-004受入基準）。",
+            "dependencies": "",
+            "responsibility": "フォント一覧・基本図形プリセット・アイコンセットを管理するライブラリ。GridEditorModuleが要素を配置する際の素材ソースとして機能する。JSONファイルとして定義し、ユーザーが追加可能。",
+            "relatedSWR": "SWR-003, SWR-004"
+          }
+        ],
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ ソフトウェアアーキテクチャ設計書",
+        "policy": "単一責任原則に基づきコンポーネントを分割する。ElectronのメインプロセスとレンダラープロセスをIPCで明確に分離し、ファイルI/OはMainProcessに集約する。UIロジックはRendererProcess内のモジュールに分割し、グリッド編集・テンプレート管理・エクスポートをそれぞれ独立したモジュールとして実装する。",
+        "contextDiagram": "graph LR\n    User[\"謎制作者\"]\n    App[\"謎解き画像生成アプリ\"]\n    FS[(\"ローカルFS\")]\n    PNG[\"PNGファイル\"]\n    SVG[\"SVGファイル\"]\n    Tmpl[\"テンプレートJSON\"]\n    Tools[\"配信ツール\"]\n\n    User -->|操作| App\n    App -->|読み込み| Tmpl\n    App -->|出力| PNG\n    App -->|出力| SVG\n    Tmpl --- FS\n    PNG --- FS\n    SVG --- FS\n    PNG -->|共有| Tools\n    SVG -->|共有| Tools",
+        "componentDiagram": "graph TD\n    User[\"謎制作者\"]\n\n    subgraph Electron[\"Electronアプリ\"]\n        subgraph Main[\"MainProcess\"]\n            MP[\"MainProcess\"]\n        end\n        subgraph Renderer[\"RendererProcess\"]\n            RP[\"RendererProcess\"]\n            GE[\"GridEditorModule\"]\n            TE[\"TemplateEngine\"]\n            EX[\"ExportModule\"]\n            EL[\"ElementLibrary\"]\n        end\n    end\n\n    FS[(\"ローカルFS\")]\n\n    User -->|操作| RP\n    RP -->|IPC| MP\n    MP -->|IPC| RP\n    RP --> GE\n    RP --> TE\n    RP --> EX\n    GE --> EL\n    EX --> GE\n    MP --> FS"
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "CMP_001",
+    "name": "MainProcess",
+    "description": "Electronメインプロセス。ファイルI/O・OS連携・ウィンドウ管理を担う",
+    "tags": []
+  },
+  {
+    "id": "CMP_002",
+    "name": "RendererProcess",
+    "description": "ElectronレンダラープロセスのUI全体制御。ユーザー入力を受け取り各モジュールに委譲する",
+    "tags": []
+  },
+  {
+    "id": "CMP_003",
+    "name": "GridEditorModule",
+    "description": "グリッドベースの要素配置・編集操作を担うコアエディター",
+    "tags": []
+  },
+  {
+    "id": "CMP_004",
+    "name": "TemplateEngine",
+    "description": "ひな型テンプレートの管理・読み込み・保存",
+    "tags": []
+  },
+  {
+    "id": "CMP_005",
+    "name": "ExportModule",
+    "description": "PNG・SVG出力および画像分割出力を担うエクスポート処理",
+    "tags": []
+  },
+  {
+    "id": "CMP_006",
+    "name": "ElementLibrary",
+    "description": "フォント・図形・アイコンのプリセット要素を管理するライブラリ",
+    "tags": []
+  }
+]

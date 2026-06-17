@@ -1,0 +1,82 @@
+[
+  {
+    "id": "CHG_001",
+    "title": "PNG保存ボタンは横長すぎ",
+    "description": "綺麗なレイアウトを考えて欲しい",
+    "priority": "medium",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_002",
+    "title": "グリッドの解釈が違いそう",
+    "description": "グリッドは文字や図形等の配置のガイドとして使われるだけ。文字や図形がその大きさにそって描画・配置されるようにする。表示のON/OFFを可能とする",
+    "priority": "high",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_003",
+    "title": "グリッドのパラメータは適用を押さなくても変わるように",
+    "description": "セルサイズを設定するとその大きさにそってグリッドが表示されるようにする。また、行数、列数は設定の必要がなく、画面いっぱいに表示されるようにする。代わりに、オフセットを設定できるようにする。",
+    "priority": "high",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_004",
+    "title": "テキストの配置",
+    "description": "テキストは、現在指定しているグリッド1セルにつき1文字が表示されるように隙間を開ける。",
+    "priority": "high",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_005",
+    "title": "レイヤー機能がほしい",
+    "description": "同じ画像でもレイヤーを指定したい。同じレイヤーは同じグリッドサイズにする。",
+    "priority": "medium",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_006",
+    "title": "テンプレートが思ってたのと違うのでいらないかも",
+    "description": "テンプレートの代わりに、\n迷路を書くために、グリッドに沿って線を引く/消すモードを追加してほしい",
+    "priority": "medium",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_007",
+    "title": "画像サイズの指定が欲しい",
+    "description": "正方形のキャンバスしか作れないので、縦横の設定をつけたい",
+    "priority": "medium",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  },
+  {
+    "id": "CHG_008",
+    "title": "配置位置の設定が面倒",
+    "description": "数値で入力するのは面倒なので、クリックしたところに該当する位置が勝手に入るようにしてほしい",
+    "priority": "medium",
+    "status": "open",
+    "relatedDocs": [],
+    "notes": "",
+    "created": "2026-06-12"
+  }
+]

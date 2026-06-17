@@ -1,0 +1,390 @@
+{
+  "id": "SDD_001",
+  "type": "SDD",
+  "version": "2.0",
+  "process": "SWE3",
+  "upstream": [
+    "SAD_001"
+  ],
+  "created": "2026-06-12",
+  "content": {
+    "units": [
+      {
+        "id": "UNT-001",
+        "name": "gridCanvas.js",
+        "component": "GridEditorModule",
+        "filePath": "src/renderer/grid/gridCanvas.js",
+        "responsibility": "fabric.js の Canvas インスタンスを管理する中核ユニット。グリッドはガイド線として管理（配置の基準線）。行数・列数はCanvasサイズ/セルサイズから自動計算する。グリッド表示ON/OFFのトグル、offsetX/offsetYによる開始位置設定、幅・高さ独立設定、クリックイベントによるセル座標返却を担う。外部へは addElement / removeElement / getSnapshot / loadState / clearCanvas / toggleGrid / getCellFromPoint を公開する。",
+        "relatedSWR": "SWR-003, SWR-004, SWR-005, SWR-011, SWR-012, SWR-013"
+      },
+      {
+        "id": "UNT-002",
+        "name": "elementPlacer.js",
+        "component": "GridEditorModule",
+        "filePath": "src/renderer/grid/elementPlacer.js",
+        "responsibility": "セル座標からCanvas上のpx座標に変換し要素を配置する。テキストは1セル1文字でセルサイズに合わせたフォントサイズを自動計算する。図形・画像もセルサイズに合わせてリサイズして配置する。",
+        "relatedSWR": "SWR-003, SWR-004, SWR-005"
+      },
+      {
+        "id": "UNT-003",
+        "name": "editorUndoManager.js",
+        "component": "GridEditorModule",
+        "filePath": "src/renderer/grid/editorUndoManager.js",
+        "responsibility": "gridCanvas の状態スナップショット（JSON）をスタックで管理し、undo（前の状態に戻す）/ redo（次の状態に進む）を提供する。最大50ステップ保持。",
+        "relatedSWR": "SWR-003, SWR-004"
+      },
+      {
+        "id": "UNT-004",
+        "name": "templateLoader.js",
+        "component": "TemplateEngine",
+        "filePath": "src/renderer/template/templateLoader.js",
+        "responsibility": "プロジェクトJSON（ファイルパス）を読み込み、スキーマバージョンを検証してProjectDefinitionオブジェクトを返す。テンプレート機能は廃止し、作業状態の保存/読み込みに特化する。不正なスキーマは ProjectValidationError を throw する。",
+        "relatedSWR": "SWR-001, SWR-009"
+      },
+      {
+        "id": "UNT-005",
+        "name": "mazeDrawer.js",
+        "component": "MazeModeModule",
+        "filePath": "src/renderer/maze/mazeDrawer.js",
+        "responsibility": "迷路モード: グリッドセル境界に沿って線を引く/消すモードを提供する。クリック/ドラッグで線の追加・削除を行う。セル境界の辺（上・下・左・右）を識別してfabric.jsのLineオブジェクトとして管理する。",
+        "relatedSWR": "SWR-015"
+      },
+      {
+        "id": "UNT-006",
+        "name": "pngExporter.js",
+        "component": "ExportModule",
+        "filePath": "src/renderer/export/pngExporter.js",
+        "responsibility": "gridCanvas.getSnapshot() が返す fabric.Canvas インスタンスから toDataURL を呼び出し、指定 dpi（72/96/150/300）でスケーリングした PNG の Blob を返す。10秒タイムアウトを設ける。",
+        "relatedSWR": "SWR-007, SWR-010"
+      },
+      {
+        "id": "UNT-007",
+        "name": "svgExporter.js",
+        "component": "ExportModule",
+        "filePath": "src/renderer/export/svgExporter.js",
+        "responsibility": "gridCanvas.getSnapshot() から fabric.Canvas.toSVG() を呼び出し、テキスト要素を文字として保持した SVG 文字列を返す。画像要素は Base64 埋め込みと外部参照パスの両モードをサポートする。",
+        "relatedSWR": "SWR-008"
+      },
+      {
+        "id": "UNT-008",
+        "name": "elementCatalog.js",
+        "component": "ElementLibrary",
+        "filePath": "src/renderer/library/elementCatalog.js",
+        "responsibility": "フォント一覧・基本図形プリセット（矩形/円/三角/矢印/星）・アイコンセットの定義を管理する。JSON ファイルから動的に追加でき、getElements(category) で定義リストを返す。",
+        "relatedSWR": "SWR-003, SWR-004"
+      },
+      {
+        "id": "UNT-009",
+        "name": "app.js",
+        "component": "RendererProcess",
+        "filePath": "src/renderer/app.js",
+        "responsibility": "RendererProcess の起動エントリポイント。DOM 準備完了後に gridCanvas / templateLoader / pngExporter / svgExporter / layerManager / mazeDrawer を初期化してUIイベントにバインドする。未保存警告（beforeunload）を設定する。グリッド設定のリアルタイム反映（適用ボタン廃止）、キャンバスクリックで配置セル自動設定、レイヤー管理UIバインド、迷路モード切り替えUIバインド、ツールバーUIレイアウト改善を担う。",
+        "relatedSWR": "SWR-001, SWR-002, SWR-006, SWR-011, SWR-012, SWR-013, SWR-N04"
+      },
+      {
+        "id": "UNT-010",
+        "name": "main.js",
+        "component": "MainProcess",
+        "filePath": "src/main/main.js",
+        "responsibility": "Electron アプリのエントリポイント。BrowserWindow 生成、contextBridge による IPC ハンドラ（saveFile / openFileDialog / readFile）の登録、アプリライフサイクル管理を担う。nodeIntegration は false に固定する。",
+        "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+      },
+      {
+        "id": "UNT-011",
+        "name": "layerManager.js",
+        "component": "LayerManagementModule",
+        "filePath": "src/renderer/layer/layerManager.js",
+        "responsibility": "レイヤーのCRUD管理。レイヤーごとにfabric.jsオブジェクトをグループ管理し、表示/非表示を切り替える。全レイヤーは同一グリッドサイズを共有する。レイヤーの追加・削除・順序変更・アクティブレイヤー切り替えを提供する。",
+        "relatedSWR": "SWR-014"
+      }
+    ],
+    "version": "2.0",
+    "approver": "",
+    "errorHandling": [
+      {
+        "recovery": "エラーメッセージをUIに表示し、プロジェクト選択画面に戻る",
+        "detection": "templateLoader.js のスキーマバリデーション時",
+        "type": "ProjectValidationError",
+        "notify": "例外オブジェクトを呼び出し元に throw し、app.js でキャッチしてトースト表示"
+      },
+      {
+        "recovery": "エクスポート処理をキャンセルし、ユーザーに再試行を促す",
+        "detection": "pngExporter.js で Promise.race によりタイムアウト検出（10秒）",
+        "type": "TimeoutError（PNG出力）",
+        "notify": "例外オブジェクトを呼び出し元に throw し、app.js でキャッチしてトースト表示"
+      },
+      {
+        "recovery": "ファイル保存失敗をユーザーに通知し、再試行または別パス指定を促す",
+        "detection": "ipcRenderer.invoke の戻り値 success フィールドが false",
+        "type": "IPC通信エラー",
+        "notify": "app.js でエラーダイアログを表示する"
+      },
+      {
+        "recovery": "確認ダイアログを表示し、ユーザーが保存または破棄を選択する",
+        "detection": "app.js の beforeunload イベントで isDirty フラグを確認",
+        "type": "未保存警告",
+        "notify": "ブラウザ標準の beforeunload ダイアログ（Electron ではカスタムダイアログ）"
+      }
+    ],
+    "author": "謎制作者",
+    "apis": [
+      {
+        "returns": "追加した fabric オブジェクト",
+        "sideEffect": "キャンバスの描画内容が更新される。undoスタックに操作が積まれる",
+        "declaration": "addElement(type, cellPos, options): FabricObject",
+        "purpose": "指定セルに要素（テキスト/図形/画像）を追加してキャンバスに描画する",
+        "unit": "gridCanvas.js",
+        "precondition": "Canvas が初期化済みであること",
+        "error": "不明な type は TypeError を throw する",
+        "args": "type: 'text'|'shape'|'image' — 要素種別\ncellPos: {row, col} — 配置先セル座標\noptions: {text?, fontFamily?, fontSize?, fill?, shapeName?, src?, opacity?}"
+      },
+      {
+        "returns": "fabric.js JSON 文字列（Canvas.toJSON() の出力）",
+        "sideEffect": "なし",
+        "declaration": "getSnapshot(): string",
+        "purpose": "現在のキャンバス状態を fabric.js JSON 文字列として返す",
+        "unit": "gridCanvas.js",
+        "precondition": "Canvas が初期化済みであること",
+        "error": "なし",
+        "args": "なし"
+      },
+      {
+        "returns": "{row: number, col: number} — セル座標",
+        "sideEffect": "なし",
+        "declaration": "getCellFromPoint(x, y): {row, col}",
+        "purpose": "Canvas上のpx座標からグリッドセル座標を計算して返す",
+        "unit": "gridCanvas.js",
+        "precondition": "Canvas が初期化済みであること",
+        "error": "Canvas範囲外の座標は null を返す",
+        "args": "x: number — Canvas上のX座標(px)\ny: number — Canvas上のY座標(px)"
+      },
+      {
+        "returns": "Promise<Blob> — PNG Blob",
+        "sideEffect": "なし（ファイル保存は呼び出し元の責務）",
+        "declaration": "exportPng(canvas, dpi): Promise<Blob>",
+        "purpose": "Canvas コンテンツを指定 dpi の PNG Blob として出力する",
+        "unit": "pngExporter.js",
+        "precondition": "canvas にコンテンツが存在すること",
+        "error": "10秒以内に完了しない場合 TimeoutError を throw する",
+        "args": "canvas: fabric.Canvas インスタンス\ndpi: 72 | 96 | 150 | 300"
+      },
+      {
+        "returns": "ProjectDefinition — {id, schemaVersion, gridConfig, layers, styles}",
+        "sideEffect": "なし",
+        "declaration": "loadProject(filePath): ProjectDefinition",
+        "purpose": "JSON ファイルパスからプロジェクトを読み込んで返す",
+        "unit": "templateLoader.js",
+        "precondition": "なし（ファイルが存在すること）",
+        "error": "存在しないファイルは ProjectNotFoundError を throw する\n不正スキーマは ProjectValidationError を throw する",
+        "args": "filePath: string — プロジェクトJSONのファイルパス"
+      }
+    ],
+    "status": "Draft",
+    "title": "謎解き用画像生成アプリ ソフトウェア詳細設計書",
+    "componentDiagram": "graph TD\n    subgraph Main[MainProcess]\n      UNT010[main.js]\n    end\n    subgraph Renderer[RendererProcess]\n      UNT009[app.js]\n      subgraph GE[GridEditorModule]\n        UNT001[gridCanvas.js]\n        UNT002[elementPlacer.js]\n        UNT003[editorUndoManager.js]\n      end\n      subgraph TE[TemplateEngine]\n        UNT004[templateLoader.js]\n      end\n      subgraph MM[MazeModeModule]\n        UNT005[mazeDrawer.js]\n      end\n      subgraph EX[ExportModule]\n        UNT006[pngExporter.js]\n        UNT007[svgExporter.js]\n      end\n      subgraph EL[ElementLibrary]\n        UNT008[elementCatalog.js]\n      end\n      subgraph LM[LayerManagementModule]\n        UNT011[layerManager.js]\n      end\n    end\n    UNT009 --> UNT001\n    UNT009 --> UNT004\n    UNT009 --> UNT006\n    UNT009 --> UNT011\n    UNT009 --> UNT005\n    UNT001 --> UNT002\n    UNT001 --> UNT003\n    UNT001 --> UNT008\n    UNT006 --> UNT001\n    UNT007 --> UNT001\n    UNT011 --> UNT001\n    UNT009 -->|IPC| UNT010",
+    "overview": "SADで定義したコンポーネントを11ユニットに分割して実装仕様を記述する。CHG_001〜CHG_008対応としてレイヤー管理モジュール（UNT-011: layerManager.js）および迷路モジュール（UNT-005: mazeDrawer.js）を追加し、TemplateEngineはプロジェクト保存/読み込み専用に改修する。各ユニットはES Module形式で実装し、単体テスト可能な単一責務を持つ。",
+    "classDiagram": "classDiagram\n    class GridCanvas {\n        -canvas fabric.Canvas\n        -undoMgr EditorUndoManager\n        -placer ElementPlacer\n        -gridVisible bool\n        +addElement(type, cellPos, options) FabricObject\n        +removeElement(obj) void\n        +getSnapshot() string\n        +loadState(json) void\n        +clearCanvas() void\n        +toggleGrid(visible) void\n        +getCellFromPoint(x, y) CellPos\n    }\n    class ElementPlacer {\n        -gridConfig GridConfig\n        +cellToPixel(cellPos) Point\n        +snapToGrid(point) Point\n        +placeElement(canvas, type, cellPos, options) void\n        +calcFontSize(cellSize) number\n    }\n    class EditorUndoManager {\n        -stack string[]\n        -pointer int\n        -maxSize int\n        +push(snapshot) void\n        +undo() string\n        +redo() string\n        +canUndo() bool\n        +canRedo() bool\n    }\n    class TemplateLoader {\n        +loadProject(filePath) ProjectDefinition\n        -validateSchema(def) bool\n    }\n    class MazeDrawer {\n        -walls WallDefinition[]\n        +onPointerDown(point) void\n        +onPointerMove(point) void\n        +onPointerUp() void\n        +toggleWall(cellPos, side) void\n    }\n    class PngExporter {\n        +exportPng(canvas, dpi) Promise\n        -scaleCanvas(canvas, dpi) Canvas\n    }\n    class SvgExporter {\n        +exportSvg(canvas, embedImages) Promise\n    }\n    class ElementCatalog {\n        -catalog ElementDefinition[]\n        +getElements(category) ElementDefinition[]\n        +addElement(def) void\n    }\n    class LayerManager {\n        -layers Layer[]\n        -activeLayerIndex int\n        +addLayer(name) Layer\n        +removeLayer(id) void\n        +setVisible(id, visible) void\n        +setActiveLayer(id) void\n        +reorder(idList) void\n    }\n    class App {\n        -gridCanvas GridCanvas\n        -templateLoader TemplateLoader\n        -pngExporter PngExporter\n        -layerManager LayerManager\n        -mazeDrawer MazeDrawer\n        -isDirty bool\n        +init() void\n        +onExportPng(dpi) void\n        +onGridConfigChange(config) void\n        +onCanvasClick(x, y) void\n    }\n    class Main {\n        +createWindow() void\n        +handleSaveFile(path, data) bool\n        +handleOpenDialog(options) string[]\n        +handleReadFile(path) string\n    }\n    App --> GridCanvas\n    App --> TemplateLoader\n    App --> PngExporter\n    App --> SvgExporter\n    App --> LayerManager\n    App --> MazeDrawer\n    App ..> Main : IPC\n    GridCanvas --> ElementPlacer\n    GridCanvas --> EditorUndoManager\n    GridCanvas --> ElementCatalog\n    LayerManager --> GridCanvas\n    MazeDrawer --> GridCanvas\n    PngExporter --> GridCanvas\n    SvgExporter --> GridCanvas",
+    "seqTemplateLoad": "sequenceDiagram\n    actor User as 謎制作者\n    participant App as app.js\n    participant TL as templateLoader.js\n    participant GC as gridCanvas.js\n    participant LM as layerManager.js\n\n    User->>App: プロジェクトを開く\n    App->>TL: loadProject(filePath)\n    TL->>TL: validateSchema(def)\n    TL-->>App: ProjectDefinition\n    App->>LM: 全レイヤーをクリア\n    App->>GC: loadState(project.gridConfig)\n    GC->>GC: clearCanvas()\n    GC->>GC: drawGrid(config)\n    GC-->>App: 完了\n    App->>LM: レイヤー復元\n    App-->>User: グリッド・レイヤー表示",
+    "seqElementPlace": "sequenceDiagram\n    actor User as 謎制作者\n    participant App as app.js\n    participant GC as gridCanvas.js\n    participant EP as elementPlacer.js\n    participant UM as editorUndoManager.js\n    participant EC as elementCatalog.js\n\n    User->>App: キャンバスをクリック(x, y)\n    App->>GC: getCellFromPoint(x, y)\n    GC-->>App: {row:2, col:3}\n    App->>App: 配置セルUI更新\n    User->>App: 文字「A」を入力\n    App->>GC: addElement('text', {row:2,col:3}, {text:'A'})\n    GC->>EC: getElements('font')\n    EC-->>GC: FontDefinition[]\n    GC->>EP: placeElement(canvas, 'text', {row:2,col:3}, opts)\n    EP->>EP: cellToPixel({row:2,col:3})\n    EP->>EP: calcFontSize(cellSize)\n    EP-->>GC: 配置完了\n    GC->>GC: canvas.renderAll()\n    GC->>UM: push(snapshot)\n    GC-->>App: FabricObject\n    App-->>User: 文字が描画される",
+    "seqExport": "sequenceDiagram\n    actor User as 謎制作者\n    participant App as app.js\n    participant PE as pngExporter.js\n    participant GC as gridCanvas.js\n    participant Mn as main.js\n    participant FS as ファイルシステム\n\n    User->>App: PNG保存 300dpi を選択\n    App->>Mn: ipc:openFileDialog\n    Mn->>User: 保存先ダイアログ表示\n    User->>Mn: 保存パスを選択\n    Mn-->>App: filePaths['C:/out.png']\n    App->>PE: exportPng(canvas, 300)\n    PE->>GC: getSnapshot()\n    GC-->>PE: fabric.Canvas\n    PE->>PE: scaleCanvas(canvas, 300dpi)\n    PE->>PE: toDataURL('png')\n    PE-->>App: Blob\n    App->>Mn: ipc:saveFile(path, blob)\n    Mn->>FS: fs.writeFile(path, buffer)\n    FS-->>Mn: 完了\n    Mn-->>App: success:true\n    App-->>User: 保存しました",
+    "seqTemplateSave": "sequenceDiagram\n    actor User as 謎制作者\n    participant App as app.js\n    participant GC as gridCanvas.js\n    participant LM as layerManager.js\n    participant TL as templateLoader.js\n    participant Mn as main.js\n    participant FS as ファイルシステム\n\n    note over User,FS: 保存フロー\n    User->>App: プロジェクトとして保存\n    App->>GC: getSnapshot()\n    GC-->>App: fabricJSON\n    App->>LM: getAllLayers()\n    LM-->>App: Layer[]\n    App->>App: buildProjectJSON(fabricJSON, layers)\n    App->>Mn: ipc:openFileDialog\n    Mn->>User: 保存先ダイアログ\n    User->>Mn: パスを選択\n    Mn-->>App: filePaths['project.json']\n    App->>Mn: ipc:saveFile(path, projectJSON)\n    Mn->>FS: fs.writeFile(path, data)\n    FS-->>Mn: 完了\n    Mn-->>App: success:true\n    App-->>User: プロジェクトを保存しました\n\n    note over User,FS: 読み込みフロー\n    User->>App: プロジェクトを開く\n    App->>Mn: ipc:openFileDialog\n    Mn->>User: ファイル選択ダイアログ\n    User->>Mn: project.jsonを選択\n    Mn-->>App: filePaths['project.json']\n    App->>Mn: ipc:readFile(path)\n    Mn->>FS: fs.readFile(path)\n    FS-->>Mn: JSON文字列\n    Mn-->>App: data:jsonStr\n    App->>TL: loadProject(path)\n    TL->>TL: validateSchema(def)\n    TL-->>App: ProjectDefinition\n    App->>GC: loadState(project.gridConfig)\n    App->>LM: restoreLayers(project.layers)\n    GC-->>App: 完了\n    App-->>User: グリッド復元完了"
+  },
+  "status": "Draft",
+  "downstream": [
+    "UTS_001"
+  ],
+  "title": "謎解き用画像生成アプリ ソフトウェア詳細設計書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "units": [
+          {
+            "id": "UNT-001",
+            "name": "gridCanvas.js",
+            "component": "GridEditorModule",
+            "filePath": "src/renderer/grid/gridCanvas.js",
+            "responsibility": "fabric.js の Canvas インスタンスを管理する中核ユニット。グリッド線の描画、セルの選択・ハイライト、オブジェクト（テキスト/図形/画像）の追加・移動・削除を担う。外部へは addElement / removeElement / getSnapshot / loadState / clearCanvas を公開する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005"
+          },
+          {
+            "id": "UNT-002",
+            "name": "elementPlacer.js",
+            "component": "GridEditorModule",
+            "filePath": "src/renderer/grid/elementPlacer.js",
+            "responsibility": "セル座標（行・列）から Canvas 上の px 座標へ変換し、テキスト・図形・画像を指定セルに配置する。グリッドのスナップ吸着と整列を保証する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005"
+          },
+          {
+            "id": "UNT-003",
+            "name": "editorUndoManager.js",
+            "component": "GridEditorModule",
+            "filePath": "src/renderer/grid/editorUndoManager.js",
+            "responsibility": "gridCanvas の状態スナップショット（JSON）をスタックで管理し、undo（前の状態に戻す）/ redo（次の状態に進む）を提供する。最大50ステップ保持。",
+            "relatedSWR": "SWR-003, SWR-004"
+          },
+          {
+            "id": "UNT-004",
+            "name": "templateLoader.js",
+            "component": "TemplateEngine",
+            "filePath": "src/renderer/template/templateLoader.js",
+            "responsibility": "テンプレートJSON（ファイルパスまたは組み込みID）を読み込み、スキーマバージョンを検証して TemplateDefinition オブジェクトを返す。不正なスキーマは TemplateValidationError を throw する。",
+            "relatedSWR": "SWR-001, SWR-009"
+          },
+          {
+            "id": "UNT-005",
+            "name": "builtinTemplates.js",
+            "component": "TemplateEngine",
+            "filePath": "src/renderer/template/builtinTemplates.js",
+            "responsibility": "組み込みひな型（文字グリッド・数字暗号・図形配置・クロスワード・迷路）の定義を配列として export する。各ひな型は id / label / description / defaultGrid を持つ。",
+            "relatedSWR": "SWR-001, SWR-002"
+          },
+          {
+            "id": "UNT-006",
+            "name": "pngExporter.js",
+            "component": "ExportModule",
+            "filePath": "src/renderer/export/pngExporter.js",
+            "responsibility": "gridCanvas.getSnapshot() が返す fabric.Canvas インスタンスから toDataURL を呼び出し、指定 dpi（72/96/150/300）でスケーリングした PNG の Blob を返す。10秒タイムアウトを設ける。",
+            "relatedSWR": "SWR-007, SWR-010"
+          },
+          {
+            "id": "UNT-007",
+            "name": "svgExporter.js",
+            "component": "ExportModule",
+            "filePath": "src/renderer/export/svgExporter.js",
+            "responsibility": "gridCanvas.getSnapshot() から fabric.Canvas.toSVG() を呼び出し、テキスト要素を文字として保持した SVG 文字列を返す。画像要素は Base64 埋め込みと外部参照パスの両モードをサポートする。",
+            "relatedSWR": "SWR-008"
+          },
+          {
+            "id": "UNT-008",
+            "name": "elementCatalog.js",
+            "component": "ElementLibrary",
+            "filePath": "src/renderer/library/elementCatalog.js",
+            "responsibility": "フォント一覧・基本図形プリセット（矩形/円/三角/矢印/星）・アイコンセットの定義を管理する。JSON ファイルから動的に追加でき、getElements(category) で定義リストを返す。",
+            "relatedSWR": "SWR-003, SWR-004"
+          },
+          {
+            "id": "UNT-009",
+            "name": "app.js",
+            "component": "RendererProcess",
+            "filePath": "src/renderer/app.js",
+            "responsibility": "RendererProcess の起動エントリポイント。DOM 準備完了後に gridCanvas / templateLoader / pngExporter / svgExporter を初期化してUIイベントにバインドする。未保存警告（beforeunload）を設定する。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-006, SWR-N04"
+          },
+          {
+            "id": "UNT-010",
+            "name": "main.js",
+            "component": "MainProcess",
+            "filePath": "src/main/main.js",
+            "responsibility": "Electron アプリのエントリポイント。BrowserWindow 生成、contextBridge による IPC ハンドラ（saveFile / openFileDialog / readFile）の登録、アプリライフサイクル管理を担う。nodeIntegration は false に固定する。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+          }
+        ],
+        "version": "1.0",
+        "overview": "SADで定義した6コンポーネント（MainProcess/RendererProcess/GridEditorModule/TemplateEngine/ExportModule/ElementLibrary）を10ユニットに分割して実装仕様を記述する。各ユニットはES Module形式で実装し、単体テスト可能な単一責務を持つ。"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "2.0",
+      "summary": "CHG_001〜CHG_008対応により設計更新",
+      "snapshot": {
+        "version": "2.0",
+        "overview": "SADで定義したコンポーネントを11ユニットに分割して実装仕様を記述する。CHG_001〜CHG_008対応としてレイヤー管理モジュール（UNT-011: layerManager.js）および迷路モジュール（UNT-005: mazeDrawer.js）を追加し、TemplateEngineはプロジェクト保存/読み込み専用に改修する。各ユニットはES Module形式で実装し、単体テスト可能な単一責務を持つ。",
+        "units": [
+          {
+            "id": "UNT-001",
+            "name": "gridCanvas.js",
+            "component": "GridEditorModule",
+            "filePath": "src/renderer/grid/gridCanvas.js",
+            "responsibility": "fabric.js の Canvas インスタンスを管理する中核ユニット。グリッドはガイド線として管理（配置の基準線）。行数・列数はCanvasサイズ/セルサイズから自動計算する。グリッド表示ON/OFFのトグル、offsetX/offsetYによる開始位置設定、幅・高さ独立設定、クリックイベントによるセル座標返却を担う。外部へは addElement / removeElement / getSnapshot / loadState / clearCanvas / toggleGrid / getCellFromPoint を公開する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005, SWR-011, SWR-012, SWR-013"
+          },
+          {
+            "id": "UNT-002",
+            "name": "elementPlacer.js",
+            "component": "GridEditorModule",
+            "filePath": "src/renderer/grid/elementPlacer.js",
+            "responsibility": "セル座標からCanvas上のpx座標に変換し要素を配置する。テキストは1セル1文字でセルサイズに合わせたフォントサイズを自動計算する。図形・画像もセルサイズに合わせてリサイズして配置する。",
+            "relatedSWR": "SWR-003, SWR-004, SWR-005"
+          },
+          {
+            "id": "UNT-003",
+            "name": "editorUndoManager.js",
+            "component": "GridEditorModule",
+            "filePath": "src/renderer/grid/editorUndoManager.js",
+            "responsibility": "gridCanvas の状態スナップショット（JSON）をスタックで管理し、undo（前の状態に戻す）/ redo（次の状態に進む）を提供する。最大50ステップ保持。",
+            "relatedSWR": "SWR-003, SWR-004"
+          },
+          {
+            "id": "UNT-004",
+            "name": "templateLoader.js",
+            "component": "TemplateEngine",
+            "filePath": "src/renderer/template/templateLoader.js",
+            "responsibility": "プロジェクトJSON（ファイルパス）を読み込み、スキーマバージョンを検証してProjectDefinitionオブジェクトを返す。テンプレート機能は廃止し、作業状態の保存/読み込みに特化する。不正なスキーマは ProjectValidationError を throw する。",
+            "relatedSWR": "SWR-001, SWR-009"
+          },
+          {
+            "id": "UNT-005",
+            "name": "mazeDrawer.js",
+            "component": "MazeModeModule",
+            "filePath": "src/renderer/maze/mazeDrawer.js",
+            "responsibility": "迷路モード: グリッドセル境界に沿って線を引く/消すモードを提供する。クリック/ドラッグで線の追加・削除を行う。セル境界の辺（上・下・左・右）を識別してfabric.jsのLineオブジェクトとして管理する。",
+            "relatedSWR": "SWR-015"
+          },
+          {
+            "id": "UNT-006",
+            "name": "pngExporter.js",
+            "component": "ExportModule",
+            "filePath": "src/renderer/export/pngExporter.js",
+            "responsibility": "gridCanvas.getSnapshot() が返す fabric.Canvas インスタンスから toDataURL を呼び出し、指定 dpi（72/96/150/300）でスケーリングした PNG の Blob を返す。10秒タイムアウトを設ける。",
+            "relatedSWR": "SWR-007, SWR-010"
+          },
+          {
+            "id": "UNT-007",
+            "name": "svgExporter.js",
+            "component": "ExportModule",
+            "filePath": "src/renderer/export/svgExporter.js",
+            "responsibility": "gridCanvas.getSnapshot() から fabric.Canvas.toSVG() を呼び出し、テキスト要素を文字として保持した SVG 文字列を返す。画像要素は Base64 埋め込みと外部参照パスの両モードをサポートする。",
+            "relatedSWR": "SWR-008"
+          },
+          {
+            "id": "UNT-008",
+            "name": "elementCatalog.js",
+            "component": "ElementLibrary",
+            "filePath": "src/renderer/library/elementCatalog.js",
+            "responsibility": "フォント一覧・基本図形プリセット（矩形/円/三角/矢印/星）・アイコンセットの定義を管理する。JSON ファイルから動的に追加でき、getElements(category) で定義リストを返す。",
+            "relatedSWR": "SWR-003, SWR-004"
+          },
+          {
+            "id": "UNT-009",
+            "name": "app.js",
+            "component": "RendererProcess",
+            "filePath": "src/renderer/app.js",
+            "responsibility": "RendererProcess の起動エントリポイント。DOM 準備完了後に gridCanvas / templateLoader / pngExporter / svgExporter / layerManager / mazeDrawer を初期化してUIイベントにバインドする。未保存警告（beforeunload）を設定する。グリッド設定のリアルタイム反映（適用ボタン廃止）、キャンバスクリックで配置セル自動設定、レイヤー管理UIバインド、迷路モード切り替えUIバインド、ツールバーUIレイアウト改善を担う。",
+            "relatedSWR": "SWR-001, SWR-002, SWR-006, SWR-011, SWR-012, SWR-013, SWR-N04"
+          },
+          {
+            "id": "UNT-010",
+            "name": "main.js",
+            "component": "MainProcess",
+            "filePath": "src/main/main.js",
+            "responsibility": "Electron アプリのエントリポイント。BrowserWindow 生成、contextBridge による IPC ハンドラ（saveFile / openFileDialog / readFile）の登録、アプリライフサイクル管理を担う。nodeIntegration は false に固定する。",
+            "relatedSWR": "SWR-007, SWR-008, SWR-009, SWR-010, SWR-N04"
+          },
+          {
+            "id": "UNT-011",
+            "name": "layerManager.js",
+            "component": "LayerManagementModule",
+            "filePath": "src/renderer/layer/layerManager.js",
+            "responsibility": "レイヤーのCRUD管理。レイヤーごとにfabric.jsオブジェクトをグループ管理し、表示/非表示を切り替える。全レイヤーは同一グリッドサイズを共有する。レイヤーの追加・削除・順序変更・アクティブレイヤー切り替えを提供する。",
+            "relatedSWR": "SWR-014"
+          }
+        ]
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}

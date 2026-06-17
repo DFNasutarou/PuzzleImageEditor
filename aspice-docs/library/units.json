@@ -1,0 +1,62 @@
+[
+  {
+    "id": "UNT_001",
+    "name": "gridCanvas.js",
+    "description": "Canvasへのグリッド描画・セル管理（fabric.js使用）",
+    "tags": []
+  },
+  {
+    "id": "UNT_002",
+    "name": "elementPlacer.js",
+    "description": "テキスト・図形・画像をグリッドセルに配置するロジック",
+    "tags": []
+  },
+  {
+    "id": "UNT_003",
+    "name": "editorUndoManager.js",
+    "description": "グリッド操作のundo/redoスタック管理",
+    "tags": []
+  },
+  {
+    "id": "UNT_004",
+    "name": "templateLoader.js",
+    "description": "テンプレートJSONの読み込み・バリデーション・適用",
+    "tags": []
+  },
+  {
+    "id": "UNT_005",
+    "name": "builtinTemplates.js",
+    "description": "組み込みひな型定義（文字グリッド・数字暗号・クロスワード・迷路等）",
+    "tags": []
+  },
+  {
+    "id": "UNT_006",
+    "name": "pngExporter.js",
+    "description": "Canvasコンテンツを指定解像度でPNG出力",
+    "tags": []
+  },
+  {
+    "id": "UNT_007",
+    "name": "svgExporter.js",
+    "description": "Canvasコンテンツをテキスト保持SVGとして出力",
+    "tags": []
+  },
+  {
+    "id": "UNT_008",
+    "name": "elementCatalog.js",
+    "description": "フォント・図形・アイコンのプリセット素材カタログ管理",
+    "tags": []
+  },
+  {
+    "id": "UNT_009",
+    "name": "app.js",
+    "description": "RendererProcessのアプリ初期化・各モジュール組み立て",
+    "tags": []
+  },
+  {
+    "id": "UNT_010",
+    "name": "main.js",
+    "description": "Electronメインプロセス。IPC受付・fs操作・ウィンドウ管理",
+    "tags": []
+  }
+]

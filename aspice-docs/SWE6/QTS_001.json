@@ -1,0 +1,311 @@
+{
+  "id": "QTS_001",
+  "type": "QTS",
+  "version": "1.0",
+  "process": "SWE6",
+  "upstream": [
+    "ITS_001",
+    "SRS_003"
+  ],
+  "created": "2026-06-12",
+  "content": {
+    "framework": "手動テスト（チェックリスト方式）",
+    "method": "ブラックボックス（実際の Electron アプリを操作して受入基準を確認）",
+    "version": "1.0",
+    "approver": "",
+    "testcases": [
+      {
+        "expected": "各ひな型のグリッドが正しく表示される。グリッドサイズがひな型定義と一致する（SWR-001受入基準）。",
+        "id": "TC-QTS-001",
+        "precondition": "アプリが起動済みであること",
+        "source": "SWR-001",
+        "priority": "High",
+        "target": "RendererProcess",
+        "input": "ひな型選択画面を開き、「文字グリッド」「数字暗号」「クロスワード」の3種類を順に選択してエディターを起動する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "入力した文字が指定フォント・指定色でセルに表示される（SWR-003受入基準）。",
+        "id": "TC-QTS-002",
+        "precondition": "グリッドが表示されていること",
+        "source": "SWR-003",
+        "priority": "High",
+        "target": "GridEditorModule",
+        "input": "セルをクリックして文字を入力し、フォントを「明朝体」に変更、文字色を赤に変更する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "全5図形がグリッドの指定位置に描画される（SWR-004受入基準）。",
+        "id": "TC-QTS-003",
+        "precondition": "グリッドが表示されていること",
+        "source": "SWR-004",
+        "priority": "High",
+        "target": "GridEditorModule",
+        "input": "ドラッグ＆ドロップで「矩形」「円」「三角形」「矢印」「星」の5図形を配置する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "PNGファイルが保存される。画像ビューアで内容を確認できる。出力時間が10秒以内（SWR-007, SWR-N01受入基準）。",
+        "id": "TC-QTS-004",
+        "precondition": "グリッドに文字と図形が配置されていること",
+        "source": "SWR-007, SWR-N01",
+        "priority": "High",
+        "target": "ExportModule",
+        "input": "PNG出力（300dpi）を実行してデスクトップに保存する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "テキスト要素がFigmaで選択・編集できる（SWR-008受入基準）。",
+        "id": "TC-QTS-005",
+        "precondition": "グリッドにテキスト要素が配置されていること",
+        "source": "SWR-008",
+        "priority": "High",
+        "target": "ExportModule",
+        "input": "SVG出力を実行し、出力されたSVGをFigmaにインポートする",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "グリッドの内容が完全に復元される（SWR-009受入基準）。",
+        "id": "TC-QTS-006",
+        "precondition": "フルカスタムの15x15グリッドを作成して要素を配置済みであること",
+        "source": "SWR-009",
+        "priority": "High",
+        "target": "TemplateEngine",
+        "input": "「テンプレートとして保存」でJSONファイルを出力し、アプリ再起動後にそのJSONを読み込む",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "「未保存の変更があります」の警告ダイアログが表示される（SWR-N04受入基準）。",
+        "id": "TC-QTS-007",
+        "precondition": "グリッドに編集内容がある（未保存状態）",
+        "source": "SWR-N04",
+        "priority": "High",
+        "target": "RendererProcess",
+        "input": "ウィンドウを閉じようとする",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "各キー入力に対するUI反応が100ms以内（SWR-N02受入基準）。",
+        "id": "TC-QTS-008",
+        "precondition": "グリッドが表示されていること",
+        "source": "SWR-N02",
+        "priority": "Medium",
+        "target": "GridEditorModule",
+        "input": "100文字を連続入力し、各入力間の応答時間を計測する",
+        "perspective": "正常系"
+      }
+    ],
+    "author": "謎制作者",
+    "coverageGoal": "SWR-001〜010 および SWR-N01〜N04 全件カバー",
+    "scope": "SRS_003 の全機能要件（SWR-001〜010）および非機能要件（SWR-N01〜N04）の受け入れ検証",
+    "mockPolicy": "本番相当の環境（実ファイルシステム、実際の画像ファイル）を使用する。",
+    "status": "Draft",
+    "title": "謎解き用画像生成アプリ 適格性テスト仕様書"
+  },
+  "status": "Draft",
+  "downstream": [
+    "QTR_001"
+  ],
+  "title": "謎解き用画像生成アプリ 適格性テスト仕様書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "framework": "手動テスト（チェックリスト方式）",
+        "method": "ブラックボックス（実際の Electron アプリを操作して受入基準を確認）",
+        "version": "1.0",
+        "approver": "",
+        "testcases": [
+          {
+            "expected": "各ひな型のグリッドが正しく表示される。グリッドサイズがひな型定義と一致する（SWR-001受入基準）。",
+            "id": "TC-QTS-001",
+            "precondition": "アプリが起動済みであること",
+            "source": "SWR-001",
+            "priority": "High",
+            "target": "RendererProcess",
+            "input": "ひな型選択画面を開き、「文字グリッド」「数字暗号」「クロスワード」の3種類を順に選択してエディターを起動する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "入力した文字が指定フォント・指定色でセルに表示される（SWR-003受入基準）。",
+            "id": "TC-QTS-002",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "セルをクリックして文字を入力し、フォントを「明朝体」に変更、文字色を赤に変更する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "全5図形がグリッドの指定位置に描画される（SWR-004受入基準）。",
+            "id": "TC-QTS-003",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-004",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "ドラッグ＆ドロップで「矩形」「円」「三角形」「矢印」「星」の5図形を配置する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "PNGファイルが保存される。画像ビューアで内容を確認できる。出力時間が10秒以内（SWR-007, SWR-N01受入基準）。",
+            "id": "TC-QTS-004",
+            "precondition": "グリッドに文字と図形が配置されていること",
+            "source": "SWR-007, SWR-N01",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "PNG出力（300dpi）を実行してデスクトップに保存する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "テキスト要素がFigmaで選択・編集できる（SWR-008受入基準）。",
+            "id": "TC-QTS-005",
+            "precondition": "グリッドにテキスト要素が配置されていること",
+            "source": "SWR-008",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "SVG出力を実行し、出力されたSVGをFigmaにインポートする",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "グリッドの内容が完全に復元される（SWR-009受入基準）。",
+            "id": "TC-QTS-006",
+            "precondition": "フルカスタムの15x15グリッドを作成して要素を配置済みであること",
+            "source": "SWR-009",
+            "priority": "High",
+            "target": "TemplateEngine",
+            "input": "「テンプレートとして保存」でJSONファイルを出力し、アプリ再起動後にそのJSONを読み込む",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "「未保存の変更があります」の警告ダイアログが表示される（SWR-N04受入基準）。",
+            "id": "TC-QTS-007",
+            "precondition": "グリッドに編集内容がある（未保存状態）",
+            "source": "SWR-N04",
+            "priority": "High",
+            "target": "RendererProcess",
+            "input": "ウィンドウを閉じようとする",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "各キー入力に対するUI反応が100ms以内（SWR-N02受入基準）。",
+            "id": "TC-QTS-008",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-N02",
+            "priority": "Medium",
+            "target": "GridEditorModule",
+            "input": "100文字を連続入力し、各入力間の応答時間を計測する",
+            "perspective": "正常系"
+          }
+        ],
+        "author": "謎制作者",
+        "coverageGoal": "SWR-001〜010 および SWR-N01〜N04 全件カバー",
+        "scope": "SRS_003 の全機能要件（SWR-001〜010）および非機能要件（SWR-N01〜N04）の受け入れ検証",
+        "mockPolicy": "本番相当の環境（実ファイルシステム、実際の画像ファイル）を使用する。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ 適格性テスト仕様書"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "framework": "手動テスト（チェックリスト方式）",
+        "method": "ブラックボックス（実際の Electron アプリを操作して受入基準を確認）",
+        "version": "1.0",
+        "approver": "",
+        "testcases": [
+          {
+            "expected": "各ひな型のグリッドが正しく表示される。グリッドサイズがひな型定義と一致する（SWR-001受入基準）。",
+            "id": "TC-QTS-001",
+            "precondition": "アプリが起動済みであること",
+            "source": "SWR-001",
+            "priority": "High",
+            "target": "RendererProcess",
+            "input": "ひな型選択画面を開き、「文字グリッド」「数字暗号」「クロスワード」の3種類を順に選択してエディターを起動する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "入力した文字が指定フォント・指定色でセルに表示される（SWR-003受入基準）。",
+            "id": "TC-QTS-002",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-003",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "セルをクリックして文字を入力し、フォントを「明朝体」に変更、文字色を赤に変更する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "全5図形がグリッドの指定位置に描画される（SWR-004受入基準）。",
+            "id": "TC-QTS-003",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-004",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "ドラッグ＆ドロップで「矩形」「円」「三角形」「矢印」「星」の5図形を配置する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "PNGファイルが保存される。画像ビューアで内容を確認できる。出力時間が10秒以内（SWR-007, SWR-N01受入基準）。",
+            "id": "TC-QTS-004",
+            "precondition": "グリッドに文字と図形が配置されていること",
+            "source": "SWR-007, SWR-N01",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "PNG出力（300dpi）を実行してデスクトップに保存する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "テキスト要素がFigmaで選択・編集できる（SWR-008受入基準）。",
+            "id": "TC-QTS-005",
+            "precondition": "グリッドにテキスト要素が配置されていること",
+            "source": "SWR-008",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "SVG出力を実行し、出力されたSVGをFigmaにインポートする",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "グリッドの内容が完全に復元される（SWR-009受入基準）。",
+            "id": "TC-QTS-006",
+            "precondition": "フルカスタムの15x15グリッドを作成して要素を配置済みであること",
+            "source": "SWR-009",
+            "priority": "High",
+            "target": "TemplateEngine",
+            "input": "「テンプレートとして保存」でJSONファイルを出力し、アプリ再起動後にそのJSONを読み込む",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "「未保存の変更があります」の警告ダイアログが表示される（SWR-N04受入基準）。",
+            "id": "TC-QTS-007",
+            "precondition": "グリッドに編集内容がある（未保存状態）",
+            "source": "SWR-N04",
+            "priority": "High",
+            "target": "RendererProcess",
+            "input": "ウィンドウを閉じようとする",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "各キー入力に対するUI反応が100ms以内（SWR-N02受入基準）。",
+            "id": "TC-QTS-008",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-N02",
+            "priority": "Medium",
+            "target": "GridEditorModule",
+            "input": "100文字を連続入力し、各入力間の応答時間を計測する",
+            "perspective": "正常系"
+          }
+        ],
+        "author": "謎制作者",
+        "coverageGoal": "SWR-001〜010 および SWR-N01〜N04 全件カバー",
+        "scope": "SRS_003 の全機能要件（SWR-001〜010）および非機能要件（SWR-N01〜N04）の受け入れ検証",
+        "mockPolicy": "本番相当の環境（実ファイルシステム、実際の画像ファイル）を使用する。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ 適格性テスト仕様書"
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}

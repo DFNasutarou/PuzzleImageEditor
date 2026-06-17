@@ -1,0 +1,252 @@
+{
+  "id": "ITS_001",
+  "type": "ITS",
+  "version": "1.0",
+  "process": "SWE5",
+  "upstream": [
+    "UTS_001",
+    "SAD_001"
+  ],
+  "created": "2026-06-12",
+  "content": {
+    "framework": "Playwright（Electronアプリを実際に起動してE2Eテスト）",
+    "method": "ブラックボックス（コンポーネント境界の入出力検証）",
+    "version": "1.0",
+    "approver": "",
+    "testcases": [
+      {
+        "expected": "グリッドが画面に表示される。セルサイズ・行数・列数がテンプレート定義と一致する。",
+        "id": "TC-ITS-001",
+        "precondition": "アプリが起動済みであること",
+        "source": "SWR-001, IFC-004",
+        "priority": "High",
+        "target": "GridEditorModule",
+        "input": "TemplateEngine の 'builtin:word-grid' テンプレートを選択し、GridEditorModule に読み込む",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "テキストと図形が指定セルに描画される。undoを1回実行すると図形が消え、テキストのみ残る。",
+        "id": "TC-ITS-002",
+        "precondition": "グリッドが表示されていること",
+        "source": "SWR-003, SWR-004, IFC-005",
+        "priority": "High",
+        "target": "GridEditorModule",
+        "input": "セル(0,0)に文字「A」を入力し、ElementLibrary から図形「矩形」を(1,1)に配置する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "PNGファイルが生成される。ファイルサイズが0より大きい。実行時間が10秒以内であること。",
+        "id": "TC-ITS-003",
+        "precondition": "グリッドに要素が配置されていること",
+        "source": "SWR-007, SWR-N01, IFC-001, IFC-003",
+        "priority": "High",
+        "target": "ExportModule",
+        "input": "PNG出力（300dpi）を実行し、tempディレクトリに保存する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "SVGファイルが生成される。ファイルをテキストエディタで開くと text 要素が含まれる。",
+        "id": "TC-ITS-004",
+        "precondition": "グリッドにテキスト要素が配置されていること",
+        "source": "SWR-008, IFC-001, IFC-003",
+        "priority": "High",
+        "target": "ExportModule",
+        "input": "SVG出力を実行し、tempディレクトリに保存する",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "再起動後にグリッドの内容（サイズ・要素配置）が完全に復元される。",
+        "id": "TC-ITS-005",
+        "precondition": "フルカスタムテンプレートを10x10グリッドで作成し要素を配置済みであること",
+        "source": "SWR-002, SWR-009, IFC-001, IFC-002, IFC-004",
+        "priority": "High",
+        "target": "TemplateEngine",
+        "input": "「テンプレートとして保存」を実行し、JSONファイルをtempに保存。アプリを再起動後にJSONを読み込む。",
+        "perspective": "正常系"
+      },
+      {
+        "expected": "「未保存の変更があります。保存しますか？」の確認ダイアログが表示される。",
+        "id": "TC-ITS-006",
+        "precondition": "グリッドに未保存の変更があること",
+        "source": "SWR-N04",
+        "priority": "High",
+        "target": "RendererProcess",
+        "input": "アプリウィンドウのクローズボタンを押す",
+        "perspective": "正常系"
+      }
+    ],
+    "author": "謎制作者",
+    "coverageGoal": "全インターフェース（IFC-001〜005）を少なくとも1ケースでカバーすること",
+    "scope": "コンポーネント間のIFC-001〜005を対象とした結合テスト",
+    "mockPolicy": "実ファイルシステムを使用する（tempディレクトリを用意して各テスト後にクリーンアップ）。",
+    "status": "Draft",
+    "title": "謎解き用画像生成アプリ 統合テスト仕様書"
+  },
+  "status": "Draft",
+  "downstream": [
+    "ITR_001",
+    "QTS_001"
+  ],
+  "title": "謎解き用画像生成アプリ 統合テスト仕様書",
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "framework": "Playwright（Electronアプリを実際に起動してE2Eテスト）",
+        "method": "ブラックボックス（コンポーネント境界の入出力検証）",
+        "version": "1.0",
+        "approver": "",
+        "testcases": [
+          {
+            "expected": "グリッドが画面に表示される。セルサイズ・行数・列数がテンプレート定義と一致する。",
+            "id": "TC-ITS-001",
+            "precondition": "アプリが起動済みであること",
+            "source": "SWR-001, IFC-004",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "TemplateEngine の 'builtin:word-grid' テンプレートを選択し、GridEditorModule に読み込む",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "テキストと図形が指定セルに描画される。undoを1回実行すると図形が消え、テキストのみ残る。",
+            "id": "TC-ITS-002",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-003, SWR-004, IFC-005",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "セル(0,0)に文字「A」を入力し、ElementLibrary から図形「矩形」を(1,1)に配置する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "PNGファイルが生成される。ファイルサイズが0より大きい。実行時間が10秒以内であること。",
+            "id": "TC-ITS-003",
+            "precondition": "グリッドに要素が配置されていること",
+            "source": "SWR-007, SWR-N01, IFC-001, IFC-003",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "PNG出力（300dpi）を実行し、tempディレクトリに保存する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "SVGファイルが生成される。ファイルをテキストエディタで開くと text 要素が含まれる。",
+            "id": "TC-ITS-004",
+            "precondition": "グリッドにテキスト要素が配置されていること",
+            "source": "SWR-008, IFC-001, IFC-003",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "SVG出力を実行し、tempディレクトリに保存する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "再起動後にグリッドの内容（サイズ・要素配置）が完全に復元される。",
+            "id": "TC-ITS-005",
+            "precondition": "フルカスタムテンプレートを10x10グリッドで作成し要素を配置済みであること",
+            "source": "SWR-002, SWR-009, IFC-001, IFC-002, IFC-004",
+            "priority": "High",
+            "target": "TemplateEngine",
+            "input": "「テンプレートとして保存」を実行し、JSONファイルをtempに保存。アプリを再起動後にJSONを読み込む。",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "「未保存の変更があります。保存しますか？」の確認ダイアログが表示される。",
+            "id": "TC-ITS-006",
+            "precondition": "グリッドに未保存の変更があること",
+            "source": "SWR-N04",
+            "priority": "High",
+            "target": "RendererProcess",
+            "input": "アプリウィンドウのクローズボタンを押す",
+            "perspective": "正常系"
+          }
+        ],
+        "author": "謎制作者",
+        "coverageGoal": "全インターフェース（IFC-001〜005）を少なくとも1ケースでカバーすること",
+        "scope": "コンポーネント間のIFC-001〜005を対象とした結合テスト",
+        "mockPolicy": "実ファイルシステムを使用する（tempディレクトリを用意して各テスト後にクリーンアップ）。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ 統合テスト仕様書"
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "version": "1.0",
+      "summary": "auto-save",
+      "snapshot": {
+        "framework": "Playwright（Electronアプリを実際に起動してE2Eテスト）",
+        "method": "ブラックボックス（コンポーネント境界の入出力検証）",
+        "version": "1.0",
+        "approver": "",
+        "testcases": [
+          {
+            "expected": "グリッドが画面に表示される。セルサイズ・行数・列数がテンプレート定義と一致する。",
+            "id": "TC-ITS-001",
+            "precondition": "アプリが起動済みであること",
+            "source": "SWR-001, IFC-004",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "TemplateEngine の 'builtin:word-grid' テンプレートを選択し、GridEditorModule に読み込む",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "テキストと図形が指定セルに描画される。undoを1回実行すると図形が消え、テキストのみ残る。",
+            "id": "TC-ITS-002",
+            "precondition": "グリッドが表示されていること",
+            "source": "SWR-003, SWR-004, IFC-005",
+            "priority": "High",
+            "target": "GridEditorModule",
+            "input": "セル(0,0)に文字「A」を入力し、ElementLibrary から図形「矩形」を(1,1)に配置する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "PNGファイルが生成される。ファイルサイズが0より大きい。実行時間が10秒以内であること。",
+            "id": "TC-ITS-003",
+            "precondition": "グリッドに要素が配置されていること",
+            "source": "SWR-007, SWR-N01, IFC-001, IFC-003",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "PNG出力（300dpi）を実行し、tempディレクトリに保存する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "SVGファイルが生成される。ファイルをテキストエディタで開くと text 要素が含まれる。",
+            "id": "TC-ITS-004",
+            "precondition": "グリッドにテキスト要素が配置されていること",
+            "source": "SWR-008, IFC-001, IFC-003",
+            "priority": "High",
+            "target": "ExportModule",
+            "input": "SVG出力を実行し、tempディレクトリに保存する",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "再起動後にグリッドの内容（サイズ・要素配置）が完全に復元される。",
+            "id": "TC-ITS-005",
+            "precondition": "フルカスタムテンプレートを10x10グリッドで作成し要素を配置済みであること",
+            "source": "SWR-002, SWR-009, IFC-001, IFC-002, IFC-004",
+            "priority": "High",
+            "target": "TemplateEngine",
+            "input": "「テンプレートとして保存」を実行し、JSONファイルをtempに保存。アプリを再起動後にJSONを読み込む。",
+            "perspective": "正常系"
+          },
+          {
+            "expected": "「未保存の変更があります。保存しますか？」の確認ダイアログが表示される。",
+            "id": "TC-ITS-006",
+            "precondition": "グリッドに未保存の変更があること",
+            "source": "SWR-N04",
+            "priority": "High",
+            "target": "RendererProcess",
+            "input": "アプリウィンドウのクローズボタンを押す",
+            "perspective": "正常系"
+          }
+        ],
+        "author": "謎制作者",
+        "coverageGoal": "全インターフェース（IFC-001〜005）を少なくとも1ケースでカバーすること",
+        "scope": "コンポーネント間のIFC-001〜005を対象とした結合テスト",
+        "mockPolicy": "実ファイルシステムを使用する（tempディレクトリを用意して各テスト後にクリーンアップ）。",
+        "status": "Draft",
+        "title": "謎解き用画像生成アプリ 統合テスト仕様書"
+      }
+    }
+  ],
+  "modified": "2026-06-12"
+}
