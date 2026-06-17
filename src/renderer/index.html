@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:">
+  <title>謎解き画像エディター</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <h1>謎解き画像エディター</h1>
+      <div class="undo-redo">
+        <button id="undoBtn" class="btn btn-secondary btn-sm">Undo</button>
+        <button id="redoBtn" class="btn btn-secondary btn-sm">Redo</button>
+      </div>
+    </div>
+
+    <!-- CHG_006: モード選択 -->
+    <div class="section">
+      <h2>モード</h2>
+      <div class="btn-group">
+        <button id="normalModeBtn" class="btn btn-primary btn-sm active">通常モード</button>
+        <button id="mazeModeBtn" class="btn btn-secondary btn-sm">迷路モード</button>
+      </div>
+    </div>
+
+    <!-- CHG_002/003/007: グリッド設定 -->
+    <div class="section">
+      <h2>グリッド設定</h2>
+      <div class="form-row">
+        <label for="gridCellSize">セルサイズ(px)</label>
+        <input type="number" id="gridCellSize" value="60" min="10" max="200">
+      </div>
+      <div class="form-row">
+        <label for="canvasWidth">キャンバス幅(px)</label>
+        <input type="number" id="canvasWidth" value="600" min="100" max="3000">
+      </div>
+      <div class="form-row">
+        <label for="canvasHeight">キャンバス高さ(px)</label>
+        <input type="number" id="canvasHeight" value="600" min="100" max="3000">
+      </div>
+      <div class="form-row">
+        <label for="gridOffsetX">オフセットX</label>
+        <input type="number" id="gridOffsetX" value="20">
+      </div>
+      <div class="form-row">
+        <label for="gridOffsetY">オフセットY</label>
+        <input type="number" id="gridOffsetY" value="20">
+      </div>
+      <div class="form-row">
+        <label for="gridBgColor">背景色</label>
+        <input type="color" id="gridBgColor" value="#ffffff">
+      </div>
+      <div class="form-row">
+        <label for="gridLineColor">グリッド線色</label>
+        <input type="color" id="gridLineColor" value="#cccccc">
+      </div>
+      <button id="toggleGridBtn" class="btn btn-secondary btn-sm">グリッド非表示</button>
+    </div>
+
+    <!-- CHG_008: 配置位置 -->
+    <div class="section">
+      <h2>配置位置</h2>
+      <p class="hint-text">キャンバスをクリックすると配置位置が自動設定されます</p>
+      <span>選択中: 行 <span id="selectedRow">-</span> / 列 <span id="selectedCol">-</span></span>
+    </div>
+
+    <div class="tabs">
+      <div class="tab-buttons">
+        <button class="tab-btn active" data-tab="text">テキスト</button>
+        <button class="tab-btn" data-tab="shape">図形</button>
+        <button class="tab-btn" data-tab="image">画像</button>
+      </div>
+
+      <!-- CHG_004: テキストタブ -->
+      <div id="panel-text" class="tab-panel active">
+        <div class="form-row">
+          <textarea id="textInput" placeholder="テキストを入力" rows="2" maxlength="1"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="fontFamily">フォント</label>
+          <select id="fontFamily"></select>
+        </div>
+        <div class="form-row">
+          <label for="textColor">文字色</label>
+          <input type="color" id="textColor" value="#000000">
+        </div>
+        <button id="addTextBtn" class="btn btn-primary btn-sm">テキストを追加</button>
+      </div>
+
+      <div id="panel-shape" class="tab-panel">
+        <div class="form-row">
+          <label for="shapeName">図形</label>
+          <select id="shapeName"></select>
+        </div>
+        <div class="form-row">
+          <label for="shapeFill">塗り色</label>
+          <input type="color" id="shapeFill" value="#4a90d9">
+        </div>
+        <div class="form-row">
+          <label for="shapeStroke">枠線色</label>
+          <input type="color" id="shapeStroke" value="#2c5f8a">
+        </div>
+        <button id="addShapeBtn" class="btn btn-primary btn-sm">図形を追加</button>
+      </div>
+
+      <div id="panel-image" class="tab-panel">
+        <div class="form-row">
+          <label for="imageFile">画像ファイル</label>
+          <input type="file" id="imageFile" accept="image/*">
+        </div>
+        <div class="form-row">
+          <label for="imageOpacity">不透明度</label>
+          <input type="range" id="imageOpacity" value="1" min="0" max="1" step="0.1">
+          <span id="opacityValue">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHG_005: レイヤー -->
+    <div class="section">
+      <h2>レイヤー</h2>
+      <button id="addLayerBtn" class="btn btn-secondary btn-sm">＋ レイヤー追加</button>
+      <div id="layerList"></div>
+    </div>
+  </div>
+
+  <div id="mainArea">
+    <!-- CHG_001: ツールバー -->
+    <div id="toolbar">
+      <select id="dpiSelect" class="btn-sm">
+        <option value="72">72dpi</option>
+        <option value="96" selected>96dpi</option>
+        <option value="150">150dpi</option>
+        <option value="300">300dpi</option>
+      </select>
+      <button id="savePngBtn" class="btn btn-primary btn-sm">PNG保存</button>
+      <button id="saveSvgBtn" class="btn btn-secondary btn-sm">SVG保存</button>
+      <span class="toolbar-separator">|</span>
+      <button id="saveProjectBtn" class="btn btn-secondary btn-sm">プロジェクト保存</button>
+      <button id="openProjectBtn" class="btn btn-secondary btn-sm">プロジェクトを開く</button>
+    </div>
+
+    <div id="canvasContainer">
+      <canvas id="mainCanvas"></canvas>
+    </div>
+  </div>
+
+  <div id="toastContainer"></div>
+
+  <script src="../../node_modules/fabric/dist/index.js"></script>
+  <script src="grid/editorUndoManager.js"></script>
+  <script src="grid/elementPlacer.js"></script>
+  <script src="grid/mazeDrawer.js"></script>
+  <script src="library/elementCatalog.js"></script>
+  <script src="library/layerManager.js"></script>
+  <script src="grid/gridCanvas.js"></script>
+  <script src="export/pngExporter.js"></script>
+  <script src="export/svgExporter.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    document.getElementById('imageOpacity')?.addEventListener('input', e => {
+      document.getElementById('opacityValue').textContent = Math.round(e.target.value * 100) + '%'
+    })
+  </script>
+</body>
+</html>

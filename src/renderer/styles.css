@@ -1,0 +1,432 @@
+:root {
+  --bg: #1e1e1e;
+  --sidebar-bg: #252526;
+  --surface: #2d2d2d;
+  --border: #3e3e3e;
+  --accent: #0078d4;
+  --accent-hover: #106ebe;
+  --text: #cccccc;
+  --text-dim: #888888;
+  --red: #f44747;
+  --green: #4ec9b0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ─── Sidebar ─── */
+
+#sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: #1e1e1e;
+}
+
+.sidebar-header .title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.section {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+/* ─── Template list ─── */
+
+#templateList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.template-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.template-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ─── Form elements ─── */
+
+label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+  margin-top: 6px;
+}
+
+input[type=number],
+input[type=text],
+select,
+textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  outline: none;
+}
+
+input[type=number]:focus,
+input[type=text]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+
+input[type=color] {
+  width: 100%;
+  height: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px;
+}
+
+input[type=range] {
+  width: calc(100% - 45px);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 50px;
+}
+
+/* ─── Tabs ─── */
+
+.tabs {
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-panel {
+  display: none;
+  padding: 10px 14px;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ─── Buttons ─── */
+
+.btn-primary,
+button.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-primary:hover,
+button.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+button:hover {
+  background: var(--border);
+}
+
+#undoBtn,
+#redoBtn {
+  width: auto;
+  padding: 4px 8px;
+  margin: 0 2px;
+}
+
+/* ─── Main area ─── */
+
+#mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#toolbar {
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#toolbar select {
+  width: auto;
+  min-width: 80px;
+}
+
+#canvasContainer {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 20px;
+  background: var(--bg);
+}
+
+#canvasContainer canvas {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: block;
+}
+
+/* ─── Toast ─── */
+
+#toastContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all .25s ease;
+  max-width: 320px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-success {
+  border-left: 3px solid var(--green);
+}
+
+.toast-error {
+  border-left: 3px solid var(--red);
+  color: var(--red);
+}
+
+.toast-info {
+  border-left: 3px solid var(--accent);
+}
+
+/* ─── Button variants ─── */
+
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  width: auto;
+  margin-top: 4px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.btn-group button {
+  flex: 1;
+}
+
+.btn-group button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ─── Section headings ─── */
+
+.section h2 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.sidebar-header h1 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* ─── Form rows ─── */
+
+.form-row {
+  margin-bottom: 6px;
+}
+
+.hint-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* ─── Layer list ─── */
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.layer-item:hover {
+  background: var(--border);
+}
+
+.layer-item.layer-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-visibility-btn {
+  width: auto;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ─── Toolbar separator ─── */
+
+.toolbar-separator {
+  color: var(--border);
+  font-size: 16px;
+}
+
+/* ─── Tab buttons row ─── */
+
+.tab-buttons {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── Scrollbar ─── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}

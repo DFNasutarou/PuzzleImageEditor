@@ -1,0 +1,9 @@
+{
+  "name": "puzzle-image-editor",
+  "version": "1.0.0",
+  "description": "謎解き用画像生成アプリ",
+  "main": "src/main/main.js",
+  "scripts": { "start": "electron ." },
+  "dependencies": { "fabric": "^6.0.0" },
+  "devDependencies": { "electron": "^29.0.0" }
+}
