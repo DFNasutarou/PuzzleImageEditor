@@ -14,7 +14,9 @@ class GridCanvas {
         canvasHeight: 600,
         bgColor: '#ffffff',
         gridLineColor: '#cccccc',
-        gridLineWidth: 1
+        gridLineWidth: 1,
+        cellGapX: 0,
+        cellGapY: 0
       },
       gridConfig
     )
@@ -68,8 +70,10 @@ class GridCanvas {
   }
 
   _pushUndo() {
-    const fabricJson = this.fabricCanvas.toJSON(['data'])
-    fabricJson.objects = (fabricJson.objects || []).filter(o => !(o.data && o.data.type === 'grid-line'))
+    const allObjs = this.fabricCanvas.getObjects()
+    const gridLineSet = new Set(this._gridLines)
+    const fabricJson = this.fabricCanvas.toJSON()
+    fabricJson.objects = (fabricJson.objects || []).filter((_, i) => !gridLineSet.has(allObjs[i]))
     this.undoMgr.push(JSON.stringify({
       _v: 2,
       gridConfig: Object.assign({}, this.gridConfig),
@@ -78,32 +82,51 @@ class GridCanvas {
   }
 
   drawGrid() {
-    // 既存グリッド線を削除
     this._gridLines.forEach(l => this.fabricCanvas.remove(l))
     this._gridLines = []
-    const { cellSize, offsetX, offsetY, canvasWidth, canvasHeight, gridLineColor, gridLineWidth } = this.gridConfig
-    const rows = Math.floor((canvasHeight - offsetY) / cellSize)
-    const cols = Math.floor((canvasWidth - offsetX) / cellSize)
+    const { cellSize, offsetX, offsetY, canvasWidth, canvasHeight, gridLineColor, gridLineWidth, cellGapX = 0, cellGapY = 0 } = this.gridConfig
+    const stepX = cellSize + cellGapX
+    const stepY = cellSize + cellGapY
+    const rows = Math.floor((canvasHeight - offsetY) / stepY)
+    const cols = Math.floor((canvasWidth - offsetX) / stepX)
     const opacity = this._gridVisible ? 1 : 0
-    const addLine = (x1, y1, x2, y2) => {
-      const l = new fabric.Line([x1, y1, x2, y2], {
-        stroke: gridLineColor,
-        strokeWidth: gridLineWidth,
-        selectable: false,
-        evented: false,
-        excludeFromExport: false,
-        opacity: opacity,
-        data: { type: 'grid-line' }
-      })
-      this.fabricCanvas.add(l)
-      this.fabricCanvas.sendObjectToBack(l)
-      this._gridLines.push(l)
-    }
-    for (let r = 0; r <= rows; r++) {
-      addLine(offsetX, offsetY + r * cellSize, offsetX + cols * cellSize, offsetY + r * cellSize)
-    }
-    for (let c = 0; c <= cols; c++) {
-      addLine(offsetX + c * cellSize, offsetY, offsetX + c * cellSize, offsetY + rows * cellSize)
+
+    if (cellGapX === 0 && cellGapY === 0) {
+      const addLine = (x1, y1, x2, y2) => {
+        const l = new fabric.Line([x1, y1, x2, y2], {
+          stroke: gridLineColor, strokeWidth: gridLineWidth,
+          selectable: false, evented: false, excludeFromExport: false, opacity,
+          data: { type: 'grid-line' }
+        })
+        this.fabricCanvas.add(l)
+        this.fabricCanvas.sendObjectToBack(l)
+        this._gridLines.push(l)
+      }
+      for (let r = 0; r <= rows; r++) {
+        addLine(offsetX, offsetY + r * cellSize, offsetX + cols * cellSize, offsetY + r * cellSize)
+      }
+      for (let c = 0; c <= cols; c++) {
+        addLine(offsetX + c * cellSize, offsetY, offsetX + c * cellSize, offsetY + rows * cellSize)
+      }
+    } else {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const rect = new fabric.Rect({
+            left: offsetX + c * stepX,
+            top: offsetY + r * stepY,
+            width: cellSize,
+            height: cellSize,
+            fill: 'transparent',
+            stroke: gridLineColor,
+            strokeWidth: gridLineWidth,
+            selectable: false, evented: false, opacity,
+            data: { type: 'grid-line' }
+          })
+          this.fabricCanvas.add(rect)
+          this.fabricCanvas.sendObjectToBack(rect)
+          this._gridLines.push(rect)
+        }
+      }
     }
     this.fabricCanvas.renderAll()
   }
@@ -115,9 +138,9 @@ class GridCanvas {
   }
 
   getCellFromPoint(x, y) {
-    const { cellSize, offsetX, offsetY } = this.gridConfig
-    const col = Math.max(0, Math.floor((x - offsetX) / cellSize))
-    const row = Math.max(0, Math.floor((y - offsetY) / cellSize))
+    const { cellSize, offsetX, offsetY, cellGapX = 0, cellGapY = 0 } = this.gridConfig
+    const col = Math.max(0, Math.floor((x - offsetX) / (cellSize + cellGapX)))
+    const row = Math.max(0, Math.floor((y - offsetY) / (cellSize + cellGapY)))
     return { row, col }
   }
 
@@ -148,9 +171,10 @@ class GridCanvas {
   }
 
   getSnapshot() {
-    // グリッド線を除外したJSONを返す
-    const json = this.fabricCanvas.toJSON(['data'])
-    json.objects = (json.objects || []).filter(o => !(o.data && o.data.type === 'grid-line'))
+    const allObjs = this.fabricCanvas.getObjects()
+    const gridLineSet = new Set(this._gridLines)
+    const json = this.fabricCanvas.toJSON()
+    json.objects = (json.objects || []).filter((_, i) => !gridLineSet.has(allObjs[i]))
     return JSON.stringify(json)
   }
 
@@ -212,11 +236,13 @@ class GridCanvas {
     this._undoDebounceTimer = setTimeout(() => this._pushUndo(), 500)
   }
 
-  // レイヤー切替時にセルサイズ・オフセットのみ更新（undo不要）
+  // レイヤー切替時にセルサイズ・オフセット・ギャップのみ更新（undo不要）
   applyLayerGridConfig(layerConfig) {
     if (layerConfig.cellSize !== undefined) this.gridConfig.cellSize = layerConfig.cellSize
     if (layerConfig.offsetX !== undefined) this.gridConfig.offsetX = layerConfig.offsetX
     if (layerConfig.offsetY !== undefined) this.gridConfig.offsetY = layerConfig.offsetY
+    if (layerConfig.cellGapX !== undefined) this.gridConfig.cellGapX = layerConfig.cellGapX
+    if (layerConfig.cellGapY !== undefined) this.gridConfig.cellGapY = layerConfig.cellGapY
     this.placer = new window.ElementPlacer(this.gridConfig)
     this.drawGrid()
   }

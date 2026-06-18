@@ -5,10 +5,10 @@ class ElementPlacer {
   }
 
   cellToPixel({ row, col }) {
-    const { cellSize, offsetX, offsetY } = this._config
+    const { cellSize, offsetX, offsetY, cellGapX = 0, cellGapY = 0 } = this._config
     return {
-      x: offsetX + col * cellSize,
-      y: offsetY + row * cellSize
+      x: offsetX + col * (cellSize + cellGapX),
+      y: offsetY + row * (cellSize + cellGapY)
     }
   }
 
@@ -22,9 +22,9 @@ class ElementPlacer {
   }
 
   snapToGrid({ x, y }) {
-    const { cellSize, offsetX, offsetY } = this._config
-    const col = Math.round((x - offsetX) / cellSize)
-    const row = Math.round((y - offsetY) / cellSize)
+    const { cellSize, offsetX, offsetY, cellGapX = 0, cellGapY = 0 } = this._config
+    const col = Math.round((x - offsetX) / (cellSize + cellGapX))
+    const row = Math.round((y - offsetY) / (cellSize + cellGapY))
     return { row, col }
   }
 

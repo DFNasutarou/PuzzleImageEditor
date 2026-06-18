@@ -23,7 +23,9 @@ class LayerManager {
       id, name: resolvedName, visible: true, gridVisible: true,
       cellSize: gridConfig.cellSize !== undefined ? gridConfig.cellSize : 60,
       offsetX: gridConfig.offsetX !== undefined ? gridConfig.offsetX : 0,
-      offsetY: gridConfig.offsetY !== undefined ? gridConfig.offsetY : 0
+      offsetY: gridConfig.offsetY !== undefined ? gridConfig.offsetY : 0,
+      cellGapX: gridConfig.cellGapX !== undefined ? gridConfig.cellGapX : 0,
+      cellGapY: gridConfig.cellGapY !== undefined ? gridConfig.cellGapY : 0
     };
     this._layers.push(layer);
     return layer;
@@ -35,15 +37,19 @@ class LayerManager {
     if (config.cellSize !== undefined) layer.cellSize = config.cellSize;
     if (config.offsetX !== undefined) layer.offsetX = config.offsetX;
     if (config.offsetY !== undefined) layer.offsetY = config.offsetY;
+    if (config.cellGapX !== undefined) layer.cellGapX = config.cellGapX;
+    if (config.cellGapY !== undefined) layer.cellGapY = config.cellGapY;
   }
 
   getActiveLayerGridConfig() {
     const layer = this._layers.find(l => l.id === this._activeLayerId);
-    if (!layer) return { cellSize: 60, offsetX: 0, offsetY: 0 };
+    if (!layer) return { cellSize: 60, offsetX: 0, offsetY: 0, cellGapX: 0, cellGapY: 0 };
     return {
       cellSize: layer.cellSize !== undefined ? layer.cellSize : 60,
       offsetX: layer.offsetX !== undefined ? layer.offsetX : 0,
-      offsetY: layer.offsetY !== undefined ? layer.offsetY : 0
+      offsetY: layer.offsetY !== undefined ? layer.offsetY : 0,
+      cellGapX: layer.cellGapX !== undefined ? layer.cellGapX : 0,
+      cellGapY: layer.cellGapY !== undefined ? layer.cellGapY : 0
     };
   }
 
@@ -135,6 +141,15 @@ class LayerManager {
 
   getLayers() {
     return [...this._layers];
+  }
+
+  reset() {
+    this._objLayerMap.clear();
+    this._layers = [];
+    this._activeLayerId = null;
+    this._counter = 0;
+    const defaultLayer = this.addLayer('Layer 1');
+    this._activeLayerId = defaultLayer.id;
   }
 }
 

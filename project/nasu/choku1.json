@@ -1,0 +1,38 @@
+{
+  "cellSize": 30,
+  "offsetX": 0,
+  "offsetY": 0,
+  "canvasWidth": 960,
+  "canvasHeight": 540,
+  "bgColor": "#ffffff",
+  "gridLineColor": "#cccccc",
+  "gridLineWidth": 1,
+  "cellGapX": 0,
+  "cellGapY": 0,
+  "fabricJson": "{\"version\":\"6.9.1\",\"objects\":[],\"background\":\"#ffffff\"}",
+  "layers": [
+    {
+      "id": "layer-1",
+      "name": "Layer 1",
+      "visible": true,
+      "gridVisible": true,
+      "cellSize": 60,
+      "offsetX": 0,
+      "offsetY": 0,
+      "cellGapX": 0,
+      "cellGapY": 0
+    },
+    {
+      "id": "layer-2",
+      "name": "Layer 2",
+      "visible": true,
+      "gridVisible": true,
+      "cellSize": 30,
+      "offsetX": 0,
+      "offsetY": 0,
+      "cellGapX": 0,
+      "cellGapY": 0
+    }
+  ],
+  "activeLayerId": "layer-2"
+}

@@ -2,6 +2,8 @@
 // グローバル変数のみ使用（import文なし）
 
 let gridCanvas, pngExporter, svgExporter, catalog, layerManager, mazeDrawer
+let projectExplorer
+let currentProjectFile = null
 let isDirty = false
 const setDirty = v => { isDirty = v; window.__isDirty = v }
 let currentRow = 0, currentCol = 0
@@ -74,14 +76,16 @@ document.addEventListener('DOMContentLoaded', () => {
   gridCanvas.fabricCanvas.on('object:moving', e => {
     if (isMazeMode) return
     const obj = e.target
-    const { cellSize, offsetX, offsetY } = gridCanvas.getGridConfig()
+    const { cellSize, offsetX, offsetY, cellGapX = 0, cellGapY = 0 } = gridCanvas.getGridConfig()
+    const stepX = cellSize + cellGapX
+    const stepY = cellSize + cellGapY
     let snappedLeft, snappedTop
     if (obj.type === 'text' || obj.type === 'i-text') {
-      snappedLeft = Math.round((obj.left - offsetX - cellSize / 2) / cellSize) * cellSize + offsetX + cellSize / 2
-      snappedTop = Math.round((obj.top - offsetY - cellSize / 2) / cellSize) * cellSize + offsetY + cellSize / 2
+      snappedLeft = Math.round((obj.left - offsetX - cellSize / 2) / stepX) * stepX + offsetX + cellSize / 2
+      snappedTop = Math.round((obj.top - offsetY - cellSize / 2) / stepY) * stepY + offsetY + cellSize / 2
     } else {
-      snappedLeft = Math.round((obj.left - offsetX) / cellSize) * cellSize + offsetX
-      snappedTop = Math.round((obj.top - offsetY) / cellSize) * cellSize + offsetY
+      snappedLeft = Math.round((obj.left - offsetX) / stepX) * stepX + offsetX
+      snappedTop = Math.round((obj.top - offsetY) / stepY) * stepY + offsetY
     }
     obj.set({ left: snappedLeft, top: snappedTop })
     obj.setCoords()
@@ -100,15 +104,18 @@ document.addEventListener('DOMContentLoaded', () => {
   gridCanvas.fabricCanvas.on('object:scaling', e => {
     if (isMazeMode) return
     const obj = e.target
-    const { cellSize } = gridCanvas.getGridConfig()
+    const { cellSize, cellGapX = 0, cellGapY = 0 } = gridCanvas.getGridConfig()
+    const stepX = cellSize + cellGapX
+    const stepY = cellSize + cellGapY
     const corner = e.transform && e.transform.corner
     const orig   = e.transform && e.transform.original
 
     // flipで scaleX が負になっても正しく扱うよう絶対値で実寸を計算
     const rw = obj.width  * Math.abs(obj.scaleX)
     const rh = obj.height * Math.abs(obj.scaleY)
-    const sw = Math.max(cellSize, Math.round(rw / cellSize) * cellSize)
-    const sh = Math.max(cellSize, Math.round(rh / cellSize) * cellSize)
+    // N セル占有時の正しい幅: N*stepX - cellGapX → 逆算して stepX 単位でスナップ
+    const sw = Math.max(cellSize, Math.round((rw + cellGapX) / stepX) * stepX - cellGapX)
+    const sh = Math.max(cellSize, Math.round((rh + cellGapY) / stepY) * stepY - cellGapY)
 
     const onLeft = corner === 'tl' || corner === 'ml' || corner === 'bl'
     const onTop  = corner === 'tl' || corner === 'mt' || corner === 'tr'
@@ -123,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
       newTop  = obj.top  + (onTop  ? -dh : dh) / 2
     } else if (orig) {
       // 左上原点（図形・画像）: ドラッグ開始時のアンカー辺を基準に計算
-      // rw が最小値を下回った場合もアンカーが固定されるため位置が動かない
       const origW = obj.width  * Math.abs(orig.scaleX)
       const origH = obj.height * Math.abs(orig.scaleY)
       if (onLeft) newLeft = orig.left + origW - sw
@@ -137,13 +143,48 @@ document.addEventListener('DOMContentLoaded', () => {
     obj.setCoords()
   })
 
+  projectExplorer = new window.ProjectExplorer()
+  projectExplorer.init(document.getElementById('explorer-panel'), openProjectFile, showToast)
+
   renderFontOptions()
   renderShapeOptions()
   renderLayerList()
   renderTemplateList()
   bindEvents()
+  initColorPalettes()
   applyTemplate('hd-standard')
 })
+
+function initColorPalettes() {
+  const PALETTE_COLORS = [
+    // グレースケール 7段階
+    '#000000', '#2b2b2b', '#555555', '#808080', '#aaaaaa', '#d4d4d4', '#ffffff',
+    // 虹7色（メイン・鮮やか）: 赤・橙・黄・緑・青・藍・紫
+    '#ff0000', '#ff8800', '#ffee00', '#00cc00', '#0066ff', '#3300cc', '#9900ff',
+    // 虹7色（縁取り・暗め）
+    '#990000', '#994400', '#887700', '#006600', '#003399', '#1a0066', '#550099',
+    // テトリス7色（メイン）: I・O・T・S・Z・J・L
+    '#00f0f0', '#f0f000', '#a000f0', '#00f000', '#f00000', '#0000f0', '#f0a000',
+    // テトリス7色（縁取り・明るめ）
+    '#50ffff', '#ffff50', '#f050ff', '#50ff50', '#ff5050', '#5050ff', '#fff050',
+  ]
+  document.querySelectorAll('input[type="color"]').forEach(input => {
+    const palette = document.createElement('div')
+    palette.className = 'color-palette'
+    PALETTE_COLORS.forEach(color => {
+      const swatch = document.createElement('span')
+      swatch.className = 'color-swatch'
+      swatch.style.backgroundColor = color
+      swatch.title = color
+      swatch.addEventListener('click', () => {
+        input.value = color
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      palette.appendChild(swatch)
+    })
+    input.parentNode.insertAdjacentElement('afterend', palette)
+  })
+}
 
 function renderFontOptions() {
   const sel = document.getElementById('fontFamily')
@@ -229,9 +270,13 @@ function syncLayerGridConfigUI() {
   const csEl = document.getElementById('layerCellSize')
   const oxEl = document.getElementById('layerOffsetX')
   const oyEl = document.getElementById('layerOffsetY')
+  const gxEl = document.getElementById('layerGapX')
+  const gyEl = document.getElementById('layerGapY')
   if (csEl) csEl.value = cfg.cellSize
   if (oxEl) oxEl.value = cfg.offsetX
   if (oyEl) oyEl.value = cfg.offsetY
+  if (gxEl) gxEl.value = cfg.cellGapX || 0
+  if (gyEl) gyEl.value = cfg.cellGapY || 0
 }
 
 function syncGridConfigUI() {
@@ -322,18 +367,35 @@ function bindEvents() {
     gridCanvas.setGridConfig({ gridLineColor: e.target.value })
   })
 
-  // レイヤーパネル: セルサイズ・オフセットのリアルタイム反映（レイヤーごと）
+  // レイヤーパネル: セルサイズ・オフセット・ギャップのリアルタイム反映（レイヤーごと）
   const onLayerGridInput = () => {
     const cellSize = parseInt(document.getElementById('layerCellSize')?.value) || 60
     const offsetX = parseInt(document.getElementById('layerOffsetX')?.value) || 0
     const offsetY = parseInt(document.getElementById('layerOffsetY')?.value) || 0
-    layerManager.setLayerGridConfig(layerManager.getActiveLayerId(), { cellSize, offsetX, offsetY })
-    gridCanvas.applyLayerGridConfig({ cellSize, offsetX, offsetY })
-    mazeDrawer.updateConfig(gridCanvas.getGridConfig())
+    const cellGapX = parseInt(document.getElementById('layerGapX')?.value) || 0
+    const cellGapY = parseInt(document.getElementById('layerGapY')?.value) || 0
+    layerManager.setLayerGridConfig(layerManager.getActiveLayerId(), { cellSize, offsetX, offsetY, cellGapX, cellGapY })
+    gridCanvas.applyLayerGridConfig({ cellSize, offsetX, offsetY, cellGapX, cellGapY })
   }
-  document.getElementById('layerCellSize')?.addEventListener('input', onLayerGridInput)
-  document.getElementById('layerOffsetX')?.addEventListener('input', onLayerGridInput)
-  document.getElementById('layerOffsetY')?.addEventListener('input', onLayerGridInput)
+  document.getElementById('layerCellSize')?.addEventListener('input', () => { onLayerGridInput(); mazeDrawer.updateConfig(gridCanvas.getGridConfig()) })
+  document.getElementById('layerOffsetX')?.addEventListener('input', () => { onLayerGridInput(); mazeDrawer.updateConfig(gridCanvas.getGridConfig()) })
+  document.getElementById('layerOffsetY')?.addEventListener('input', () => { onLayerGridInput(); mazeDrawer.updateConfig(gridCanvas.getGridConfig()) })
+  // Gap入力中は空欄のときmazeDrawer更新をスキップ。blur確定時に必ず更新
+  const gapXEl = document.getElementById('layerGapX')
+  const gapYEl = document.getElementById('layerGapY')
+  gapXEl?.addEventListener('input', () => { onLayerGridInput(); if (gapXEl.value !== '') mazeDrawer.updateConfig(gridCanvas.getGridConfig()) })
+  gapYEl?.addEventListener('input', () => { onLayerGridInput(); if (gapYEl.value !== '') mazeDrawer.updateConfig(gridCanvas.getGridConfig()) })
+  gapXEl?.addEventListener('blur', () => mazeDrawer.updateConfig(gridCanvas.getGridConfig()))
+  gapYEl?.addEventListener('blur', () => mazeDrawer.updateConfig(gridCanvas.getGridConfig()))
+
+  // 迷路: 線のスタイル変更
+  const updateMazeStyle = () => {
+    const color = document.getElementById('mazeLineColor')?.value || '#000000'
+    const width = parseInt(document.getElementById('mazeLineWidth')?.value) || 3
+    mazeDrawer.setStyle(color, width)
+  }
+  document.getElementById('mazeLineColor')?.addEventListener('input', updateMazeStyle)
+  document.getElementById('mazeLineWidth')?.addEventListener('input', updateMazeStyle)
 
   // グリッド表示/非表示（レイヤーごとに状態保持）
   document.getElementById('toggleGridBtn')?.addEventListener('click', () => {
@@ -440,33 +502,18 @@ function bindEvents() {
     } catch (e) { showToast('エラー: ' + e.message, 'error') }
   })
 
-  // プロジェクト保存
+  // プロジェクト上書き保存 (Ctrl+S)
   document.getElementById('saveProjectBtn')?.addEventListener('click', async () => {
-    try {
-      const proj = { ...gridCanvas.getGridConfig(), fabricJson: gridCanvas.getSnapshot() }
-      const result = await window.electronAPI.openFileDialog({ save: true, filters: [{ name: 'Project JSON', extensions: ['json'] }], defaultPath: 'project.json' })
-      if (!result.filePaths || !result.filePaths[0]) return
-      const saveResult = await window.electronAPI.saveFile(result.filePaths[0], JSON.stringify(proj))
-      if (saveResult.success) { setDirty(false); showToast('プロジェクトを保存しました') }
-      else showToast('保存失敗: ' + saveResult.error, 'error')
-    } catch (e) { showToast('エラー: ' + e.message, 'error') }
+    if (currentProjectFile) await saveProjectToFile(currentProjectFile)
+    else await saveProjectAs()
   })
 
-  // プロジェクト読み込み
-  document.getElementById('openProjectBtn')?.addEventListener('click', async () => {
-    try {
-      const result = await window.electronAPI.openFileDialog({ filters: [{ name: 'Project JSON', extensions: ['json'] }] })
-      if (!result.filePaths || !result.filePaths[0]) return
-      const readResult = await window.electronAPI.readFile(result.filePaths[0])
-      if (!readResult.data) { showToast('読み込み失敗: ' + readResult.error, 'error'); return }
-      const parsed = JSON.parse(readResult.data)
-      gridCanvas.setGridConfig(parsed)
-      gridCanvas.cancelDebouncedUndo()
-      const loadPromise = parsed.fabricJson ? gridCanvas.loadState(parsed.fabricJson) : Promise.resolve()
-      loadPromise.then(() => { mazeDrawer.rebuildLines(); layerManager.rebuildFromCanvas(); layerManager.syncLayerSelectability(); syncGridConfigUI() })
-      setDirty(false)
-      showToast('プロジェクトを読み込みました')
-    } catch (e) { showToast('エラー: ' + e.message, 'error') }
+  // 名前をつけて保存
+  document.getElementById('saveProjectAsBtn')?.addEventListener('click', saveProjectAs)
+
+  // フォルダを開く
+  document.getElementById('openProjectBtn')?.addEventListener('click', () => {
+    if (projectExplorer) projectExplorer._openFolderDialog()
   })
 
   const afterUndoRedo = () => {
@@ -501,6 +548,11 @@ function bindEvents() {
       const p = gridCanvas.redo()
       if (p) p.then(afterUndoRedo)
     }
+    if (e.ctrlKey && !e.shiftKey && e.key === 's') {
+      e.preventDefault()
+      if (currentProjectFile) saveProjectToFile(currentProjectFile)
+      else saveProjectAs()
+    }
   })
 
   // 選択オブジェクト削除 (Delete/Backspace)
@@ -520,6 +572,112 @@ function bindEvents() {
       setDirty(true)
     }
   })
+}
+
+async function openProjectFile(filePath) {
+  if (!filePath) { currentProjectFile = null; return }
+  if (isDirty) {
+    const ok = confirm('保存されていない変更があります。このファイルを開きますか？')
+    if (!ok) return
+  }
+  try {
+    const readResult = await window.electronAPI.readFile(filePath)
+    if (readResult.error) { showToast('読み込み失敗: ' + readResult.error, 'error'); return }
+    const parsed = JSON.parse(readResult.data)
+    gridCanvas.cancelDebouncedUndo()
+    const fileName = filePath.replace(/\\/g, '/').split('/').pop()
+    const finalize = () => {
+      mazeDrawer.rebuildLines()
+
+      // layerManagerをリセットし、保存済みレイヤー設定を復元
+      layerManager.reset()
+      const cfg = gridCanvas.getGridConfig()
+      if (parsed.layers && parsed.layers.length > 0) {
+        parsed.layers.forEach((savedLayer, i) => {
+          let targetId
+          if (i === 0) {
+            targetId = layerManager.getActiveLayerId()
+            const layer = layerManager.getLayers()[0]
+            if (layer) layer.name = savedLayer.name || 'Layer 1'
+          } else {
+            const newLayer = layerManager.addLayer(savedLayer.name || ('Layer ' + (i + 1)))
+            targetId = newLayer.id
+          }
+          layerManager.setLayerGridConfig(targetId, {
+            cellSize: savedLayer.cellSize !== undefined ? savedLayer.cellSize : cfg.cellSize,
+            offsetX: savedLayer.offsetX !== undefined ? savedLayer.offsetX : cfg.offsetX,
+            offsetY: savedLayer.offsetY !== undefined ? savedLayer.offsetY : cfg.offsetY,
+            cellGapX: savedLayer.cellGapX !== undefined ? savedLayer.cellGapX : 0,
+            cellGapY: savedLayer.cellGapY !== undefined ? savedLayer.cellGapY : 0
+          })
+        })
+        if (parsed.activeLayerId) layerManager.setActiveLayer(parsed.activeLayerId)
+      } else {
+        // 旧形式: gridConfigでアクティブレイヤーをリセット
+        layerManager.setLayerGridConfig(layerManager.getActiveLayerId(), {
+          cellSize: cfg.cellSize, offsetX: cfg.offsetX, offsetY: cfg.offsetY,
+          cellGapX: cfg.cellGapX || 0, cellGapY: cfg.cellGapY || 0
+        })
+      }
+
+      layerManager.rebuildFromCanvas()
+      layerManager.syncLayerSelectability()
+      syncGridConfigUI()
+      syncLayerGridVisibility()
+      syncLayerGridConfig()
+      renderLayerList()
+      currentProjectFile = filePath
+      if (projectExplorer) projectExplorer.setCurrentFile(filePath)
+      setDirty(false)
+      showToast(fileName + ' を開きました')
+    }
+    if (parsed.fabricJson) {
+      gridCanvas.setGridConfig(parsed)
+      gridCanvas.loadState(parsed.fabricJson).then(finalize)
+    } else {
+      gridCanvas.clearCanvas()
+      finalize()
+    }
+  } catch (e) {
+    showToast('エラー: ' + e.message, 'error')
+  }
+}
+
+async function saveProjectToFile(filePath) {
+  try {
+    const layersData = layerManager.getLayers().map(l => ({
+      id: l.id, name: l.name, visible: l.visible !== false, gridVisible: l.gridVisible !== false,
+      cellSize: l.cellSize, offsetX: l.offsetX, offsetY: l.offsetY,
+      cellGapX: l.cellGapX || 0, cellGapY: l.cellGapY || 0
+    }))
+    const proj = { ...gridCanvas.getGridConfig(), layers: layersData, activeLayerId: layerManager.getActiveLayerId(), fabricJson: gridCanvas.getSnapshot() }
+    const result = await window.electronAPI.saveFile(filePath, JSON.stringify(proj, null, 2))
+    if (result.success) {
+      setDirty(false)
+      showToast(filePath.replace(/\\/g, '/').split('/').pop() + ' を保存しました')
+    } else {
+      showToast('保存失敗: ' + result.error, 'error')
+    }
+  } catch (e) {
+    showToast('エラー: ' + e.message, 'error')
+  }
+}
+
+async function saveProjectAs() {
+  try {
+    const result = await window.electronAPI.openFileDialog({
+      save: true,
+      filters: [{ name: 'Project JSON', extensions: ['json'] }],
+      defaultPath: 'project.json',
+    })
+    if (!result.filePaths || !result.filePaths[0]) return
+    const filePath = result.filePaths[0]
+    await saveProjectToFile(filePath)
+    currentProjectFile = filePath
+    if (projectExplorer) projectExplorer.setCurrentFile(filePath)
+  } catch (e) {
+    showToast('エラー: ' + e.message, 'error')
+  }
 }
 
 function showToast(msg, type = 'success') {
